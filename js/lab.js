@@ -1,5 +1,6 @@
 // 큰 판 실험실 — 무작위 배치를 여러 번 돌려 밀도별 정체 비율을 보는 화면 (기록은 이 컴퓨터에만)
 import { halfStep } from "./core.js";
+import { attachZoom } from "./zoom.js";
 
 const ls = {
   get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
@@ -224,6 +225,7 @@ export function initLab() {
     lab.speed = +b.dataset.speed;
     document.querySelectorAll("#labSpeed button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false"));
   }));
+  attachZoom($("labZoom"), $("labChart"), "큰 판 실험실");
   $("btnOne").addEventListener("click", startWatch);
   $("btnTen").addEventListener("click", () => startBatch(10));
   $("btnStop").addEventListener("click", stopRun);

@@ -33,9 +33,9 @@
   <section id="view-rules" role="tabpanel" aria-labelledby="tab-rules">
     <ol class="rules-strip">
       <li><span>빨간 차는 오른쪽, 파란 차는 아래쪽으로 한 칸씩 간다.</span></li>
+      <li><span>판의 끝과 끝은 이어져 있다. 같은 번호 줄, 같은 글자 열끼리.</span></li>
       <li><span>빨강 차례 다음 파랑 차례. 두 차례를 합쳐 1라운드.</span></li>
       <li><span>바로 앞 칸이 빈 차만 움직이고, 같은 색은 동시에 움직인다.</span></li>
-      <li><span>판의 끝과 끝은 이어져 있다. 같은 번호 줄, 같은 글자 열끼리.</span></li>
     </ol>
     <div class="picker">
       <div class="seg" id="rulesSize" role="group" aria-label="판 크기">
@@ -147,7 +147,10 @@
     </div>
     <div class="results">
       <div class="panel">
-        <h2>밀도와 정체 비율</h2>
+        <div class="btn-row" style="justify-content:space-between">
+          <h2>밀도와 정체 비율</h2>
+          <button class="btn small" id="labZoom" type="button">크게 보기</button>
+        </div>
         <div class="chart-box"><svg id="labChart" class="chart" viewBox="0 0 640 360" role="img" aria-label="밀도에 따른 정체 비율 그래프"></svg></div>
       </div>
       <div class="panel">

@@ -1,6 +1,7 @@
 // 교사 대시보드 — 반 목록, 실시간 기록판, 다시 보기, 밀도 조사, 학생별 기록, 제출 모아 보기
 import { parse, classify, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT, RANDOM_FIXED_5x5 } from "./core.js";
 import { Simulator, miniBoard } from "./sim-ui.js";
+import { attachZoom } from "./zoom.js";
 
 const $ = (id) => document.getElementById(id);
 const ls = {
@@ -172,6 +173,7 @@ const CAR_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 $("densCars").innerHTML = CAR_OPTIONS.map((n) => `<option value="${n}">${n}대 (밀도 ${(n / 25).toFixed(2)})</option>`).join("");
 $("densOn").addEventListener("change", (e) => { saveCfg({ density: { on: e.target.checked, cars: +$("densCars").value } }); $("densSaved").textContent = "저장하는 중…"; });
 $("densCars").addEventListener("change", (e) => { saveCfg({ density: { on: $("densOn").checked, cars: +e.target.value } }); $("densSaved").textContent = "저장하는 중…"; });
+attachZoom($("densZoom"), $("densChart"), "밀도 조사");
 
 function renderDensity() {
   if (T.config) { $("densOn").checked = !!T.config.density.on; $("densCars").value = String(T.config.density.cars); }
