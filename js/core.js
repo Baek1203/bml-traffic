@@ -82,10 +82,7 @@ export const CHALLENGES = [
     test: (s) => s.result === "fixed" },
   { id: "maxRepeat", title: "반복, 가장 많이", short: "반복 최대", better: "max",
     desc: "멈추지 않고 같은 모습이 되풀이되는 배치를 차를 가장 많이 써서 만들기",
-    test: (s) => s.result === "free" || s.result === "partial" },
-  { id: "maxFree", title: "모두 움직이는 반복, 가장 많이", short: "모두 움직임 최대", better: "max",
-    desc: "모든 차가 한 번도 쉬지 않고 계속 움직이는 배치를 차를 가장 많이 써서 만들기",
-    test: (s) => s.result === "free" }
+    test: (s) => s.result === "free" || s.result === "partial" }
 ];
 export function balanced(s) { return s.nr === s.nb && s.nr > 0; }
 export function challengeIds(s) {

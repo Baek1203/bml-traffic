@@ -130,6 +130,9 @@ function renderBest() {
     }
     box.append(card);
   }
+  const bal = subs.filter(balanced), nFix = bal.filter((s) => s.result === "fixed").length;
+  const people = new Set(subs.map((s) => s.cls + "|" + s.sid)).size;
+  $("boardCount").textContent = subs.length ? `지금까지 제출 ${subs.length}개 (학생 ${people}명) · 기록으로 세는 제출 중 고정 ${nFix}개, 반복 ${bal.length - nFix}개` : "";
 }
 $("showBoards").addEventListener("change", (e) => { T.showBoards = e.target.checked; renderBest(); });
 $("showSids").addEventListener("change", (e) => { T.showSids = e.target.checked; renderBest(); });
@@ -224,7 +227,7 @@ function renderStudents() {
   all.forEach((s) => { const k = s.cls + "|" + s.sid; if (!by.has(k)) by.set(k, []); by.get(k).push(s); });
   const rows = [...by.entries()].sort((a, b) => a[0].split("|")[1].localeCompare(b[0].split("|")[1]) || a[0].localeCompare(b[0]));
   $("stuBody").innerHTML = "";
-  if (!rows.length) { $("stuBody").innerHTML = '<tr><td colspan="9" class="empty" style="text-align:center">아직 제출이 없어요.</td></tr>'; return; }
+  if (!rows.length) { $("stuBody").innerHTML = '<tr><td colspan="8" class="empty" style="text-align:center">아직 제출이 없어요.</td></tr>'; return; }
   for (const [k, list] of rows) {
     const [cls, sid] = k.split("|");
     const good = list.filter(verify);
@@ -232,12 +235,12 @@ function renderStudents() {
     const warn = list.length - good.length;
     const bal = good.filter(balanced);
     const hasFixed = bal.some((s) => s.result === "fixed"), hasRep = bal.some((s) => s.result !== "fixed");
-    const top = best.minFixed.value === 10 || (best.maxRepeat.value || 0) >= 20 || best.maxFree.value === 10;
+    const top = best.minFixed.value === 10 || (best.maxRepeat.value || 0) >= 20;
     const level = top ? "상" : hasFixed && hasRep ? "중" : "하";
     const tr = document.createElement("tr");
     tr.className = "clickable" + (T.sid === k ? " sel" : "");
     const v = (x) => (x === null ? "–" : x);
-    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length}</td><td class="mono">${v(best.minFixed.value)}</td><td class="mono">${v(best.maxRepeat.value)}</td><td class="mono">${v(best.maxFree.value)}</td><td class="mono">${warn || ""}</td><td class="left">${level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
+    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length}</td><td class="mono">${v(best.minFixed.value)}</td><td class="mono">${v(best.maxRepeat.value)}</td><td class="mono">${warn || ""}</td><td class="left">${level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
     tr.addEventListener("click", () => { T.sid = T.sid === k ? null : k; renderStudents(); renderGallery(); });
     $("stuBody").append(tr);
   }
