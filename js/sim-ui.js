@@ -1,0 +1,306 @@
+// 판 하나를 한 차례씩 돌려 보는 화면 조각 — 규칙 익히기, 5×5 도전, 교사 대시보드에서 함께 씀
+import { RED, BLUE, EMPTY, counts, serialize, halfStep, willMove } from "./core.js";
+
+const COLS = "가나다라마바사";
+const SVG_NS = "http://www.w3.org/2000/svg";
+
+export function carSvg(color) {
+  return color === RED
+    ? '<svg viewBox="0 0 100 100" aria-hidden="true"><polygon class="car-r" points="14,14 56,14 86,50 56,86 14,86"/></svg>'
+    : '<svg viewBox="0 0 100 100" aria-hidden="true"><polygon class="car-b" points="14,14 86,14 86,56 50,86 14,56"/></svg>';
+}
+
+// 작은 판 그림(SVG)
+export function miniBoard(g, L, opts = {}) {
+  const s = 10, W = L * s;
+  const svg = document.createElementNS(SVG_NS, "svg");
+  svg.setAttribute("viewBox", `0 0 ${W} ${W}`);
+  svg.setAttribute("class", "mini" + (opts.className ? " " + opts.className : ""));
+  svg.setAttribute("role", "img");
+  svg.setAttribute("aria-label", opts.label || "판 그림");
+  let html = `<rect x="0" y="0" width="${W}" height="${W}" class="mini-bg"/>`;
+  for (let k = 1; k < L; k++) html += `<line x1="${k * s}" y1="0" x2="${k * s}" y2="${W}" class="mini-grid"/><line x1="0" y1="${k * s}" x2="${W}" y2="${k * s}" class="mini-grid"/>`;
+  for (let i = 0; i < g.length; i++) {
+    if (!g[i]) continue;
+    const x = (i % L) * s, y = ((i / L) | 0) * s;
+    const pts = g[i] === RED
+      ? [[1.4, 1.4], [5.6, 1.4], [8.6, 5], [5.6, 8.6], [1.4, 8.6]]
+      : [[1.4, 1.4], [8.6, 1.4], [8.6, 5.6], [5, 8.6], [1.4, 5.6]];
+    html += `<polygon class="${g[i] === RED ? "car-r" : "car-b"}" points="${pts.map(([a, b]) => (x + a).toFixed(1) + "," + (y + b).toFixed(1)).join(" ")}"/>`;
+  }
+  svg.innerHTML = html;
+  return svg;
+}
+
+function h(tag, attrs = {}, ...kids) {
+  const e = document.createElement(tag);
+  for (const k in attrs) {
+    if (k === "class") e.className = attrs[k];
+    else if (k === "text") e.textContent = attrs[k];
+    else if (k.startsWith("on")) e.addEventListener(k.slice(2), attrs[k]);
+    else e.setAttribute(k, attrs[k]);
+  }
+  for (const c of kids) if (c != null) e.append(c);
+  return e;
+}
+
+export class Simulator {
+  constructor(root, opts = {}) {
+    this.root = root;
+    this.opts = Object.assign({ editable: true, autoDetect: true, showDetectToggle: true, maxRounds: 400, halfDelay: 550 }, opts);
+    this.brush = RED;
+    this.preview = true;
+    this.autoDetect = this.opts.autoDetect;
+    this.revealed = false;
+    this.timer = null;
+    this.build();
+    this.load(opts.board || new Int8Array((opts.L || 3) ** 2), opts.L || 3);
+  }
+
+  build() {
+    const r = this.root;
+    r.classList.add("sim");
+    r.innerHTML = "";
+    this.colEdge = h("div", { class: "edge cols", style: "grid-row:1" });
+    this.colEdge2 = h("div", { class: "edge cols", style: "grid-row:3" });
+    this.rowEdge = h("div", { class: "edge rows", style: "grid-column:1;grid-row:2" });
+    this.rowEdge2 = h("div", { class: "edge rows", style: "grid-column:3;grid-row:2" });
+    this.boardEl = h("div", { class: "board", role: "group", "aria-label": "판" });
+    this.frame = h("div", { class: "board-frame" }, this.colEdge, this.rowEdge, this.boardEl, this.rowEdge2, this.colEdge2);
+
+    this.brushSeg = h("div", { class: "seg", role: "group", "aria-label": "놓을 것 고르기" });
+    [[RED, '<span class="sw r"></span>빨간 차'], [BLUE, '<span class="sw b"></span>파란 차'], [EMPTY, "지우기"]].forEach(([v, label]) => {
+      const b = h("button", { type: "button", "aria-pressed": v === RED ? "true" : "false" });
+      b.innerHTML = label;
+      b.addEventListener("click", () => { this.brush = v; this.brushSeg.querySelectorAll("button").forEach((x) => x.setAttribute("aria-pressed", x === b ? "true" : "false")); });
+      this.brushSeg.append(b);
+    });
+    this.btnClear = h("button", { type: "button", class: "btn", text: "모두 지우기", onclick: () => this.clearBoard() });
+    this.editRow = h("div", { class: "edit-row" }, h("span", { class: "label", text: "배치 고치기" }), this.brushSeg, this.btnClear);
+    this.hint = h("p", { class: "hint" });
+
+    this.roundNum = h("span", { text: "0" });
+    this.nextChip = h("span", { class: "chip" });
+    this.countLine = h("div", { class: "meta" });
+    this.btnHalf = h("button", { type: "button", class: "btn primary", onclick: () => { this.stopAuto(); this.stepHalf(); this.render(); } });
+    this.btnRound = h("button", { type: "button", class: "btn", text: "1라운드 진행", onclick: () => { this.stopAuto(); this.stepRound(); this.render(); } });
+    this.btnAuto = h("button", { type: "button", class: "btn", text: "자동 재생", onclick: () => this.toggleAuto() });
+    this.btnUndo = h("button", { type: "button", class: "btn", text: "되돌리기", onclick: () => this.undo() });
+    this.btnToEnd = h("button", { type: "button", class: "btn", text: "판정까지 한 번에", onclick: () => { this.stopAuto(); this.runToVerdict(); } });
+    this.btnReset = h("button", { type: "button", class: "btn", text: "처음 배치로", onclick: () => this.reset() });
+    this.chkPreview = h("input", { type: "checkbox", checked: "" });
+    this.chkPreview.addEventListener("change", () => { this.preview = this.chkPreview.checked; this.render(); });
+    this.chkDetect = h("input", { type: "checkbox" });
+    this.chkDetect.checked = this.autoDetect;
+    this.chkDetect.addEventListener("change", () => { this.autoDetect = this.chkDetect.checked; this.revealed = false; this.render(); });
+    this.verdictBox = h("div", { class: "verdict", "aria-live": "polite" });
+    this.btnReveal = h("button", { type: "button", class: "btn", text: "같은 모습 확인하기", onclick: () => { this.revealed = true; this.render(); } });
+
+    const counter = h("div", { class: "counter" }, h("small", { text: "라운드" }), this.roundNum);
+    this.controls = h("div", { class: "sim-controls" },
+      h("div", { class: "statline" }, counter, this.nextChip),
+      this.countLine,
+      h("div", { class: "btn-grid" }, this.btnHalf, this.btnRound, this.btnAuto, this.btnUndo, this.btnToEnd, this.btnReset),
+      h("div", { class: "toggles" },
+        h("label", { class: "toggle" }, this.chkPreview, document.createTextNode(" 이번 차례에 움직일 차 표시")),
+        this.opts.showDetectToggle ? h("label", { class: "toggle" }, this.chkDetect, document.createTextNode(" 같은 모습 자동으로 찾기")) : null),
+      this.verdictBox, this.btnReveal);
+
+    this.stripCount = h("span", { class: "meta" });
+    this.strip = h("div", { class: "strip", role: "list", "aria-label": "라운드 기록" });
+    this.stripWrap = h("section", { class: "strip-wrap" },
+      h("div", { class: "strip-head" }, h("h3", { text: "라운드 기록" }), this.stripCount),
+      this.strip);
+
+    r.append(h("div", { class: "sim-top" }, h("div", { class: "sim-board" }, this.frame, this.editRow, this.hint), this.controls), this.stripWrap);
+  }
+
+  load(board, L) {
+    this.stopAuto();
+    this.L = L;
+    this.start = Int8Array.from(board);
+    this.frame.style.setProperty("--n", L);
+    this.colEdge.innerHTML = this.colEdge2.innerHTML = [...COLS.slice(0, L)].map((c) => `<span>${c}</span>`).join("");
+    this.rowEdge.innerHTML = this.rowEdge2.innerHTML = Array.from({ length: L }, (_, i) => `<span>${i + 1}</span>`).join("");
+    this.boardEl.innerHTML = "";
+    this.cells = [];
+    for (let i = 0; i < L * L; i++) {
+      const b = h("button", { type: "button", class: "cell" });
+      b.addEventListener("click", () => this.editCell(i));
+      this.boardEl.append(b);
+      this.cells.push(b);
+    }
+    this.reset();
+  }
+
+  reset() {
+    this.stopAuto();
+    this.cur = Int8Array.from(this.start);
+    this.half = 0;
+    this.pendingMr = null;
+    this.rounds = [{ board: Int8Array.from(this.start), mr: null, mb: null }];
+    this.undoStack = [];
+    this.arrived = new Set();
+    this.verdict = null;
+    this.revealed = false;
+    this.render();
+  }
+
+  get editable() { return this.opts.editable && this.undoStack.length === 0; }
+
+  editCell(i) {
+    if (!this.editable) return;
+    const v = this.start[i] === this.brush ? EMPTY : this.brush;
+    this.start[i] = v;
+    if (this.opts.onEdit) this.opts.onEdit(Int8Array.from(this.start));
+    this.reset();
+  }
+  clearBoard() {
+    if (!this.editable) return;
+    this.start = new Int8Array(this.L * this.L);
+    if (this.opts.onEdit) this.opts.onEdit(Int8Array.from(this.start));
+    this.reset();
+  }
+
+  stepHalf() {
+    const { n } = counts(this.cur);
+    if (n === 0) return false;
+    if (this.half === 0 && this.rounds.length > this.opts.maxRounds) return false;
+    this.undoStack.push({ cur: Int8Array.from(this.cur), half: this.half, pendingMr: this.pendingMr, len: this.rounds.length, verdict: this.verdict, arrived: new Set(this.arrived) });
+    const color = this.half === 0 ? RED : BLUE;
+    const next = new Int8Array(this.cur.length);
+    const m = halfStep(this.cur, next, this.L, color);
+    this.arrived = new Set();
+    for (let i = 0; i < next.length; i++) if (next[i] === color && this.cur[i] !== color) this.arrived.add(i);
+    this.cur = next;
+    if (this.half === 0) { this.pendingMr = m; this.half = 1; }
+    else {
+      this.rounds.push({ board: Int8Array.from(this.cur), mr: this.pendingMr, mb: m });
+      this.pendingMr = null; this.half = 0;
+      if (!this.verdict) this.verdict = this.findRepeat();
+    }
+    return true;
+  }
+  stepRound() {
+    if (!this.stepHalf()) return false;
+    if (this.half === 1) this.stepHalf();
+    return true;
+  }
+  findRepeat() {
+    const k = this.rounds.length - 1, cur = this.rounds[k].board;
+    for (let j = 0; j < k; j++) {
+      const b = this.rounds[j].board;
+      let same = true;
+      for (let i = 0; i < b.length; i++) if (b[i] !== cur[i]) { same = false; break; }
+      if (!same) continue;
+      const period = k - j;
+      const { nr, nb } = counts(cur);
+      const cyc = this.rounds.slice(j + 1, k + 1);
+      const type = period === 1 ? "fixed" : cyc.every((r) => r.mr === nr && r.mb === nb) ? "free" : "partial";
+      return { type, start: j, at: k, period };
+    }
+    return null;
+  }
+  runToVerdict() {
+    let guard = 0;
+    while (!this.verdict && guard++ < this.opts.maxRounds * 2) { if (!this.stepHalf()) break; }
+    if (this.half === 1) this.stepHalf();
+    this.render();
+  }
+  undo() {
+    this.stopAuto();
+    const s = this.undoStack.pop();
+    if (!s) return;
+    this.cur = s.cur; this.half = s.half; this.pendingMr = s.pendingMr; this.verdict = s.verdict; this.arrived = s.arrived;
+    this.rounds.length = s.len;
+    this.render();
+  }
+  stopAuto() {
+    if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.btnAuto) this.btnAuto.textContent = "자동 재생";
+  }
+  toggleAuto() {
+    if (this.timer) { this.stopAuto(); return; }
+    this.btnAuto.textContent = "멈춤";
+    const delay = this.L >= 5 ? Math.round(this.opts.halfDelay * 0.6) : this.opts.halfDelay;
+    this.timer = setInterval(() => {
+      const had = !!this.verdict;
+      if (!this.stepHalf()) { this.stopAuto(); this.render(); return; }
+      this.render();
+      if (!had && this.verdict && this.autoDetect) this.stopAuto();
+    }, delay);
+  }
+
+  showVerdict() { return this.verdict && (this.autoDetect || this.revealed); }
+
+  render() {
+    const L = this.L, color = this.half === 0 ? RED : BLUE;
+    const ed = this.editable;
+    this.boardEl.classList.toggle("editable", ed);
+    for (let i = 0; i < L * L; i++) {
+      const c = this.cells[i], v = this.cur[i];
+      c.innerHTML = v ? carSvg(v) : "";
+      c.classList.toggle("arrived", this.arrived.has(i));
+      c.classList.toggle("go", this.preview && willMove(this.cur, L, i, color));
+      c.setAttribute("aria-label", `${((i / L) | 0) + 1}줄 ${COLS[i % L]}열 ${v === RED ? "빨간 차" : v === BLUE ? "파란 차" : "빈칸"}`);
+      c.tabIndex = ed ? 0 : -1;
+    }
+    const { nr, nb, n } = counts(this.cur);
+    const round = this.rounds.length - 1;
+    this.roundNum.textContent = round;
+    this.nextChip.innerHTML = `<span class="sw ${color === RED ? "r" : "b"}"></span>다음: ${color === RED ? "빨강" : "파랑"} 차례`;
+    this.countLine.textContent = `빨강 ${nr} · 파랑 ${nb} · 차 ${n}대 / ${L * L}칸 · 밀도 ${(n / (L * L)).toFixed(2)}`;
+    this.btnHalf.textContent = `${color === RED ? "빨강" : "파랑"} 차례 진행`;
+    const empty = n === 0;
+    [this.btnHalf, this.btnRound, this.btnAuto, this.btnToEnd].forEach((b) => { b.disabled = empty; });
+    this.btnToEnd.disabled = empty || !!this.verdict && this.half === 0;
+    this.btnUndo.disabled = this.undoStack.length === 0;
+    this.btnReset.disabled = this.undoStack.length === 0;
+    this.editRow.hidden = !ed;
+    this.hint.textContent = !this.opts.editable ? "" : ed
+      ? (empty ? "판이 비어 있어요. 칸을 눌러 차를 놓아 보세요." : "칸을 누르면 차를 놓거나 뺄 수 있어요. 돌리기 시작하면 고칠 수 없어요.")
+      : "배치를 고치려면 '처음 배치로'를 누르세요.";
+
+    // 판정
+    const vb = this.verdictBox, v = this.verdict;
+    if (this.showVerdict()) {
+      const from = v.start === 0 ? "처음" : `${v.start}라운드`;
+      vb.hidden = false;
+      vb.className = "verdict " + v.type;
+      if (v.type === "fixed") vb.innerHTML = `<strong>고정</strong>${v.at}라운드에 아무 차도 움직이지 못했어요. ${v.at}라운드 모습이 ${from} 모습과 같고, 이제 영원히 이 모습이에요.`;
+      else if (v.type === "free") vb.innerHTML = `<strong>반복 · 모두 움직임</strong>${v.at}라운드 모습이 ${from} 모습과 같아요. 이제부터 ${v.period}라운드마다 같은 모습이 되풀이되고, 모든 차가 쉬지 않고 움직여요.`;
+      else vb.innerHTML = `<strong>반복 · 몇 대는 기다림</strong>${v.at}라운드 모습이 ${from} 모습과 같아요. 이제부터 ${v.period}라운드마다 같은 모습이 되풀이되는데, 그동안 몇몇 차는 앞이 막혀 기다려요.`;
+    } else vb.hidden = true;
+    this.btnReveal.hidden = !(this.verdict && !this.autoDetect && !this.revealed);
+
+    // 라운드 기록 띠
+    const mark = this.showVerdict() ? this.verdict : null;
+    this.strip.innerHTML = "";
+    this.rounds.forEach((r, k) => {
+      const tile = h("div", { class: "tile", role: "listitem" });
+      if (k === round) tile.classList.add("now");
+      if (mark && (k === mark.start || k === mark.at)) tile.classList.add("match", mark.type);
+      tile.append(h("div", { class: "tile-label", text: k === 0 ? "처음" : `${k}라운드` }));
+      tile.append(miniBoard(r.board, L, { label: `${k === 0 ? "처음" : k + "라운드"} 판` }));
+      tile.append(h("div", { class: "tile-moves", text: k === 0 ? " " : `움직임 ${r.mr}·${r.mb}` }));
+      if (mark && k === mark.at) tile.append(h("div", { class: "tile-badge", text: `= ${mark.start === 0 ? "처음" : mark.start + "라운드"}` }));
+      this.strip.append(tile);
+    });
+    if (this.half === 1) {
+      const tile = h("div", { class: "tile pending", role: "listitem" },
+        h("div", { class: "tile-label", text: `${round + 1}라운드` }),
+        h("div", { class: "tile-wait", text: "빨강 차례까지 진행" }),
+        h("div", { class: "tile-moves", text: `빨강 ${this.pendingMr}대 움직임` }));
+      this.strip.append(tile);
+    }
+    this.stripCount.textContent = round === 0 ? "라운드가 끝날 때마다 판 모습이 여기에 쌓여요. '움직임 2·1'은 빨강 2대, 파랑 1대가 움직였다는 뜻이에요." : `${round}라운드까지 · '움직임 2·1'은 빨강 2대, 파랑 1대가 움직였다는 뜻`;
+    this.strip.scrollTop = this.strip.scrollHeight;
+
+    if (this.opts.onChange) this.opts.onChange(this.state());
+  }
+
+  state() {
+    const { nr, nb, n } = counts(this.start);
+    return { L: this.L, start: Int8Array.from(this.start), board: serialize(this.start), nr, nb, n, verdict: this.verdict, round: this.rounds.length - 1, editing: this.editable };
+  }
+}

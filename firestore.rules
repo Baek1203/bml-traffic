@@ -1,0 +1,43 @@
+rules_version = '2';
+// BML 교통 실험실 — 학생은 로그인 없이 쓰므로, 저장되는 값의 모양을 엄격하게 검사합니다.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function validSubmission(d) {
+      return d.keys().hasOnly(['cls', 'sid', 'mode', 'size', 'board', 'nr', 'nb', 'n', 'result', 'start', 'period', 'densityCars', 'createdAt', 'hidden'])
+        && d.keys().hasAll(['cls', 'sid', 'mode', 'size', 'board', 'nr', 'nb', 'n', 'result', 'start', 'period', 'createdAt', 'hidden'])
+        && d.cls is string && d.cls.size() > 0 && d.cls.size() <= 30
+        && d.sid is string && d.sid.matches('^[0-9]{5}$')
+        && d.mode in ['challenge', 'density']
+        && d.size == 5
+        && d.board is string && d.board.matches('^[.RB]{25}$')
+        && d.nr is int && d.nb is int && d.n is int && d.n == d.nr + d.nb && d.n >= 1 && d.n <= 25
+        && d.result in ['fixed', 'free', 'partial']
+        && d.start is int && d.period is int && d.start >= 0 && d.period >= 1
+        && (!('densityCars' in d) || d.densityCars is int)
+        && d.createdAt == request.time
+        && d.hidden == false;
+    }
+
+    // 반 목록, 밀도 조사 설정, 기록판 새로 시작 시각
+    match /config/main {
+      allow read: if true;
+      allow write: if request.resource.data.keys().hasOnly(['classes', 'density', 'resetAt', 'updatedAt'])
+        && request.resource.data.classes is list && request.resource.data.classes.size() <= 60
+        && request.resource.data.density is map
+        && request.resource.data.density.on is bool
+        && request.resource.data.density.cars is int
+        && request.resource.data.resetAt is map
+        && request.resource.data.updatedAt == request.time;
+    }
+
+    // 학생 제출: 새로 쓰기만 가능, 고치기는 '숨김' 표시만, 지우기는 막음
+    match /submissions/{id} {
+      allow read: if true;
+      allow create: if validSubmission(request.resource.data);
+      allow update: if request.resource.data.diff(resource.data).affectedKeys().hasOnly(['hidden'])
+        && request.resource.data.hidden is bool;
+      allow delete: if false;
+    }
+  }
+}
