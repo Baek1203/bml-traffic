@@ -126,7 +126,8 @@ input[type="range"] { width: 100%; accent-color: var(--ink); height: 28px; }
 .edge.cols { grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr)); grid-column: 2; }
 .edge.rows { grid-template-rows: repeat(var(--n, 5), minmax(0, 1fr)); }
 .board { grid-column: 2; grid-row: 2; display: grid; grid-template-columns: repeat(var(--n), minmax(0, 1fr)); grid-template-rows: repeat(var(--n), minmax(0, 1fr)); aspect-ratio: 1 / 1; max-width: 100%; border: 2px solid var(--ink); border-radius: 4px; overflow: hidden; background: var(--grid); gap: 1px; }
-.cell { border: 0; padding: 0; background: var(--cell); display: grid; place-items: center; position: relative; cursor: default; aspect-ratio: 1 / 1; min-width: 0; min-height: 0; }
+.cell { border: 0; padding: 0; background: var(--cell); display: grid; place-items: center; position: relative; cursor: default; aspect-ratio: 1 / 1; min-width: 0; min-height: 0; overflow: visible; }
+.cell svg.ghost { grid-area: 1 / 1; pointer-events: none; }
 .cell.arrived { background: var(--arrive); }
 .board.editable .cell { cursor: pointer; }
 .board.editable .cell:hover { background: var(--lane-soft); }

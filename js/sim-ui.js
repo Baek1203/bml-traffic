@@ -1,5 +1,5 @@
 // 판 하나를 한 차례씩 돌려 보는 화면 조각 — 규칙 익히기, 5×5 도전, 교사 대시보드에서 함께 씀
-import { RED, BLUE, EMPTY, counts, serialize, halfStep, willMove } from "./core.js";
+import { RED, BLUE, EMPTY, counts, serialize, halfStep, willMove, target } from "./core.js";
 
 const COLS = "가나다라마바사";
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -47,7 +47,13 @@ function h(tag, attrs = {}, ...kids) {
 export class Simulator {
   constructor(root, opts = {}) {
     this.root = root;
-    this.opts = Object.assign({ editable: true, autoDetect: true, showDetectToggle: true, maxRounds: 400, halfDelay: 550 }, opts);
+    this.opts = Object.assign({ editable: true, autoDetect: true, showDetectToggle: true, maxRounds: 400, halfDelay: 800 }, opts);
+    // 차가 한 칸씩 미끄러져 가는 움직임 (움직임 줄이기 설정이면 처음에 꺼 둠)
+    let reduce = false;
+    try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { }
+    this.motion = opts.motion !== undefined ? !!opts.motion : !reduce;
+    this.pendingTimer = null;
+    this.lastMove = null;
     this.brush = RED;
     this.preview = true;
     this.autoDetect = this.opts.autoDetect;
@@ -82,14 +88,17 @@ export class Simulator {
     this.roundNum = h("span", { text: "0" });
     this.nextChip = h("span", { class: "chip" });
     this.countLine = h("div", { class: "meta" });
-    this.btnHalf = h("button", { type: "button", class: "btn primary", onclick: () => { this.stopAuto(); this.stepHalf(); this.render(); } });
-    this.btnRound = h("button", { type: "button", class: "btn", text: "1라운드 진행", onclick: () => { this.stopAuto(); this.stepRound(); this.render(); } });
+    this.btnHalf = h("button", { type: "button", class: "btn primary", onclick: () => { this.stopAuto(); this.stepHalfShow(); } });
+    this.btnRound = h("button", { type: "button", class: "btn", text: "1라운드 진행", onclick: () => { this.stopAuto(); this.stepRoundShow(); } });
     this.btnAuto = h("button", { type: "button", class: "btn", text: "자동 재생", onclick: () => this.toggleAuto() });
     this.btnUndo = h("button", { type: "button", class: "btn", text: "되돌리기", onclick: () => this.undo() });
     this.btnToEnd = h("button", { type: "button", class: "btn", text: "판정까지 한 번에", onclick: () => { this.stopAuto(); this.runToVerdict(); } });
     this.btnReset = h("button", { type: "button", class: "btn", text: "처음 배치로", onclick: () => this.reset() });
     this.chkPreview = h("input", { type: "checkbox", checked: "" });
     this.chkPreview.addEventListener("change", () => { this.preview = this.chkPreview.checked; this.render(); });
+    this.chkMotion = h("input", { type: "checkbox" });
+    this.chkMotion.checked = this.motion;
+    this.chkMotion.addEventListener("change", () => { this.motion = this.chkMotion.checked; });
     this.chkDetect = h("input", { type: "checkbox" });
     this.chkDetect.checked = this.autoDetect;
     this.chkDetect.addEventListener("change", () => { this.autoDetect = this.chkDetect.checked; this.revealed = false; this.render(); });
@@ -103,6 +112,7 @@ export class Simulator {
       h("div", { class: "btn-grid" }, this.btnHalf, this.btnRound, this.btnAuto, this.btnUndo, this.btnToEnd, this.btnReset),
       h("div", { class: "toggles" },
         h("label", { class: "toggle" }, this.chkPreview, document.createTextNode(" 이번 차례에 움직일 차 표시")),
+        h("label", { class: "toggle" }, this.chkMotion, document.createTextNode(" 차가 움직이는 모습 보기")),
         this.opts.showDetectToggle ? h("label", { class: "toggle" }, this.chkDetect, document.createTextNode(" 같은 모습 자동으로 찾기")) : null),
       this.verdictBox, this.btnReveal);
 
@@ -168,6 +178,9 @@ export class Simulator {
     if (this.half === 0 && this.rounds.length > this.opts.maxRounds) return false;
     this.undoStack.push({ cur: Int8Array.from(this.cur), half: this.half, pendingMr: this.pendingMr, len: this.rounds.length, verdict: this.verdict, arrived: new Set(this.arrived) });
     const color = this.half === 0 ? RED : BLUE;
+    const moves = [];
+    for (let i = 0; i < this.cur.length; i++) if (willMove(this.cur, this.L, i, color)) moves.push({ from: i, to: target(i, this.L, color) });
+    this.lastMove = { color, moves };
     const next = new Int8Array(this.cur.length);
     const m = halfStep(this.cur, next, this.L, color);
     this.arrived = new Set();
@@ -186,6 +199,48 @@ export class Simulator {
     if (this.half === 1) this.stepHalf();
     return true;
   }
+  // 한 차례 진행 + 화면 갱신 + (켜져 있으면) 움직임
+  stepHalfShow(dur) {
+    if (!this.stepHalf()) { this.render(); return false; }
+    this.render();
+    this.animateLast(dur || 450);
+    return true;
+  }
+  // 1라운드: 빨강 차례를 보여 준 뒤 움직임이 끝나면 파랑 차례
+  stepRoundShow() {
+    if (!this.stepHalfShow()) return false;
+    if (this.half === 1) {
+      const wait = this.motion ? 450 + 150 : 0;
+      this.pendingTimer = setTimeout(() => { this.pendingTimer = null; this.stepHalfShow(); }, wait);
+    }
+    return true;
+  }
+  animateLast(dur) {
+    const mv = this.lastMove;
+    if (!this.motion || !mv || !mv.moves.length || typeof Element.prototype.animate !== "function") return;
+    const L = this.L, red = mv.color === RED;
+    const a = this.cells[0].getBoundingClientRect();
+    const stepX = L > 1 ? this.cells[1].getBoundingClientRect().left - a.left : a.width;
+    const stepY = L > 1 ? this.cells[L].getBoundingClientRect().top - a.top : a.height;
+    if (!stepX || !stepY) return;
+    const opts = { duration: dur, easing: "cubic-bezier(.45,0,.25,1)" };
+    const off = red ? `translateX(${-stepX}px)` : `translateY(${-stepY}px)`;
+    const out = red ? `translateX(${stepX}px)` : `translateY(${stepY}px)`;
+    for (const { from, to } of mv.moves) {
+      const car = this.cells[to].querySelector("svg");
+      if (car) car.animate([{ transform: off }, { transform: "none" }], opts);
+      // 판 끝을 넘어가는 차: 끝 칸에서 밖으로 빠져나가는 모습도 함께 (반대쪽 끝에서는 밖에서 들어옴)
+      const wrap = red ? to % L < from % L : to < from;
+      if (wrap) {
+        this.cells[from].insertAdjacentHTML("beforeend", carSvg(mv.color));
+        const ghost = this.cells[from].lastElementChild;
+        ghost.classList.add("ghost");
+        const an = ghost.animate([{ transform: "none" }, { transform: out }], opts);
+        an.onfinish = () => ghost.remove();
+      }
+    }
+  }
+
   findRepeat() {
     const k = this.rounds.length - 1, cur = this.rounds[k].board;
     for (let j = 0; j < k; j++) {
@@ -217,16 +272,17 @@ export class Simulator {
   }
   stopAuto() {
     if (this.timer) { clearInterval(this.timer); this.timer = null; }
+    if (this.pendingTimer) { clearTimeout(this.pendingTimer); this.pendingTimer = null; }
     if (this.btnAuto) this.btnAuto.textContent = "자동 재생";
   }
   toggleAuto() {
     if (this.timer) { this.stopAuto(); return; }
     this.btnAuto.textContent = "멈춤";
-    const delay = this.L >= 5 ? Math.round(this.opts.halfDelay * 0.6) : this.opts.halfDelay;
+    const delay = this.L >= 5 ? Math.round(this.opts.halfDelay * 0.7) : this.opts.halfDelay;
+    const dur = Math.min(450, Math.round(delay * 0.6));
     this.timer = setInterval(() => {
       const had = !!this.verdict;
-      if (!this.stepHalf()) { this.stopAuto(); this.render(); return; }
-      this.render();
+      if (!this.stepHalfShow(dur)) { this.stopAuto(); return; }
       if (!had && this.verdict && this.autoDetect) this.stopAuto();
     }, delay);
   }
