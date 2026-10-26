@@ -1,0 +1,587 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BML 교통 실험실 · 수업 슬라이드</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Do+Hyeon&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="css/slides.css">
+</head>
+<body>
+<!-- 이 파일의 장 내용은 'BML 교통모형 수업 슬라이드'와 같습니다. 판 그림(.bb)은 js/slide-board.js가 움직입니다. -->
+<div id="progress"></div>
+<div id="viewport">
+<div id="stage">
+<section id="cover" data-transition="fade" style="background:#23292E;color:#F1F4F3;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:96px">
+<div style="position:absolute;left:0;bottom:80px;width:1920px;height:12px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 96px, transparent 96px, transparent 160px)"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:36px">
+<p style="font-size:32px;color:#E2A50E;font-weight:600;letter-spacing:2px">중1 주제선택 · 수학</p>
+<h1 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:136px;font-weight:400;line-height:1.05;color:#F1F4F3">BML 교통 실험실</h1>
+<p style="font-size:40px;line-height:1.5;color:#C9D1D5">빨간 차는 오른쪽으로, 파란 차는 아래로.<br>차들은 끝내 멈출까, 같은 모습을 되풀이할까?</p>
+</div>
+<div class="bb" role="img" aria-label="빨간 차와 파란 차가 대각선으로 엇갈려 놓인 5×5 판" data-b="R.B.. .B..R B..R. ..R.B .R.B." data-mode="flow" data-dur="520" data-gap="160" style="width:480px;height:480px"></div>
+<aside>인사하고 오늘부터 두 시간 동안 할 활동을 소개합니다. 1차시에는 작은 판에서 규칙을 익히고 '고정'과 '반복'을 구별하는 눈을 기르고, 2차시에는 5×5 판에 차를 아무렇게나 놓는 실험으로 고정과 반복을 예상해 봅니다. 오른쪽 판은 차들이 대각선으로 엇갈려 있어서 영원히 멈추지 않고 달리는 배치예요.</aside>
+</section>
+<section id="hook" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;justify-content:center;gap:64px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<h1 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:96px;font-weight:400;line-height:1.2;color:#1B2024">신호등이 하나도 없는 교차로에<br>차가 점점 많아지면 어떻게 될까?</h1>
+<div style="display:flex;flex-direction:row;gap:32px">
+<p style="font-size:44px;font-weight:600;background:#DCF1E4;color:#1D7344;padding:20px 40px;border-radius:999px">계속 달린다</p>
+<p style="font-size:44px;font-weight:600;background:#FBE4E1;color:#B3261E;padding:20px 40px;border-radius:999px">꽉 막혀 멈춘다</p>
+<p style="font-size:44px;font-weight:600;background:#E9E6FA;color:#5A4BC0;padding:20px 40px;border-radius:999px">그 사이 어딘가?</p>
+</div>
+<aside>몇 명에게 생각을 듣고 칠판 구석에 남겨 둡니다. 이 질문은 2차시 마지막 '큰 판' 시연에서 다시 돌아옵니다. 오늘 쓰는 모형은 1992년 세 과학자(비함, 미들턴, 레빈)가 만든 BML 교통모형입니다.</aside>
+</section>
+<section id="rule1" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ①</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">빨간 차는 오른쪽, 파란 차는 아래쪽으로 한 칸씩</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:48px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:48px">
+<svg aria-label="빨간 차와 오른쪽 화살표" viewBox="0 0 400 160" width="400" height="160"><polygon points="20,20 92,20 140,80 92,140 20,140" fill="#C0392B" stroke="#82231A" stroke-width="5" stroke-linejoin="round"/><line x1="176" y1="80" x2="340" y2="80" stroke="#1B2024" stroke-width="12" stroke-linecap="round"/><polygon points="330,48 384,80 330,112" fill="#1B2024"/></svg>
+<p style="font-size:44px;font-weight:600;color:#C0392B">빨간 차 → 오른쪽</p>
+<div class="bb" role="img" aria-label="한 줄을 한 칸씩 오른쪽으로 가는 빨간 차" data-b="R...." data-mode="flow" data-gap="380" data-dur="560" style="width:500px;height:100px"></div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:48px">
+<div style="display:flex;flex-direction:row;align-items:center;gap:72px"><svg aria-label="파란 차와 아래쪽 화살표" viewBox="0 0 160 300" width="160" height="300"><polygon points="20,20 140,20 140,92 80,140 20,92" fill="#5DA9E9" stroke="#28649F" stroke-width="5" stroke-linejoin="round"/><line x1="80" y1="168" x2="80" y2="244" stroke="#1B2024" stroke-width="12" stroke-linecap="round"/><polygon points="48,236 80,290 112,236" fill="#1B2024"/></svg><div class="bb" role="img" aria-label="한 열을 한 칸씩 아래로 가는 파란 차" data-b="B . . ." data-mode="flow" data-gap="380" data-dur="560" style="width:90px;height:360px"></div></div>
+<p style="font-size:44px;font-weight:600;color:#1F6FB2">파란 차 ↓ 아래쪽</p>
+</div>
+</div>
+<aside>차는 두 종류뿐이고, 정해진 방향으로만 한 칸씩 갑니다. 뒤로 가거나 방향을 바꾸지 않아요. 활동지 1번 규칙을 함께 읽습니다.</aside>
+</section>
+<section id="rule4" data-period="5000" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ②</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">판의 끝과 끝은 이어져 있다</h2>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:64px">
+<div style="display:flex;flex-direction:column;gap:28px">
+<p style="font-size:32px;font-weight:600"><span style="color:#C0392B">빨간 차</span>: 오른쪽 끝 → 같은 줄 맨 왼쪽</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:28px">
+<div class="bb" role="img" aria-label="한 줄: 두 번째 칸과 다섯 번째 칸에 빨간 차, 둘 다 점선 표시" data-b=".R..R" data-mode="static" data-c="R" data-show="amber" style="width:400px;height:80px"></div>
+<div class="arrow-r" style="width:96px;height:48px;background:#1B2024"></div>
+<div class="bb" role="img" aria-label="빨강 차례 뒤: 다섯 번째 칸의 차가 첫 번째 칸으로 넘어감" data-b=".R..R" data-mode="half" data-c="R" data-show="amber" data-after="arrive" data-at="1000" style="width:400px;height:80px"></div>
+</div>
+</div>
+<div style="display:flex;flex-direction:column;gap:28px;align-items:center">
+<p style="font-size:32px;font-weight:600"><span style="color:#1F6FB2">파란 차</span>: 맨 아래 → 같은 열 맨 위</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:28px">
+<div class="bb" role="img" aria-label="한 열: 두 번째 칸과 다섯 번째 칸에 파란 차, 둘 다 점선 표시" data-b=". B . . B" data-mode="static" data-c="B" data-show="amber" style="width:72px;height:360px"></div>
+<div class="arrow-r" style="width:96px;height:48px;background:#1B2024"></div>
+<div class="bb" role="img" aria-label="파랑 차례 뒤: 맨 아래 칸의 차가 맨 위 칸으로 넘어감" data-b=". B . . B" data-mode="half" data-c="B" data-show="amber" data-after="arrive" data-at="2600" style="width:72px;height:360px"></div>
+</div>
+</div>
+</div>
+<p style="font-size:30px;color:#4F5860">판 가장자리에는 같은 번호 줄, 같은 글자 열끼리 이어져 있다는 표시가 있어요.</p>
+<aside>터널처럼 오른쪽으로 나가면 왼쪽으로 들어온다고 설명하면 잘 받아들입니다. 다음 슬라이드의 3×3 예시에서도 오른쪽 끝의 빨간 차가 왼쪽 처음 칸으로 넘어가므로 이 규칙을 먼저 익힙니다. 활동지 마지막 쪽 판의 가장자리 번호와 글자를 보여 주세요.</aside>
+</section>
+<section id="rule2" data-period="6400" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ③</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">빨강 차례 다음 파랑 차례, 둘을 합쳐 1라운드</h2>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:40px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+<div class="bb" role="img" aria-label="처음 판: 움직일 빨간 차 두 대에 점선 표시" data-b=".BR BR. ..." data-mode="static" data-c="R" data-show="amber" style="width:330px;height:330px"></div>
+<p style="font-size:32px;font-weight:600">처음</p>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+<p style="font-size:28px;font-weight:600;color:#C0392B">빨강 차례</p>
+<div class="arrow-r" style="width:120px;height:60px;background:#1B2024"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+<div class="bb" role="img" aria-label="빨강 차례 뒤 판: 빨간 차 두 대가 도착한 칸이 노랗게 표시되고, 움직일 파란 차에 점선 표시" data-b=".BR BR. ..." data-mode="half" data-c="R" data-show="amber" data-after="arrive next" data-at="1000" style="width:330px;height:330px"></div>
+<p style="font-size:32px;font-weight:600">빨강 차례 뒤</p>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:12px">
+<p style="font-size:28px;font-weight:600;color:#1F6FB2">파랑 차례</p>
+<div class="arrow-r" style="width:120px;height:60px;background:#1B2024"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:20px">
+<div class="bb" role="img" aria-label="파랑 차례 뒤 판: 1라운드가 끝난 모습" data-b="RB. B.R ..." data-mode="half" data-c="B" data-show="amber" data-after="arrive" data-at="3300" style="width:330px;height:330px"></div>
+<p style="font-size:32px;font-weight:600">1라운드 끝</p>
+</div>
+</div>
+<p style="font-size:28px;color:#4F5860;text-align:center">점선: 이번 차례에 움직일 차 · 노란 칸: 방금 도착한 차</p>
+<aside>1라운드 안에서도 빨간 차가 먼저, 파란 차가 나중입니다. 빨간 차와 파란 차를 한꺼번에 움직이는 실수가 많아요. 라운드 기록은 파랑 차례까지 끝난 모습만 그립니다.</aside>
+</section>
+<section id="rule3" data-period="4800" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:128px 128px 160px; background:#eef1f0">
+  <div style="position:absolute; bottom:0; left:0; width:1920px; height:36px; display:flex; flex-direction:column; background:#23292e">
+  </div>
+  <div style="position:absolute; bottom:15px; left:0; width:1920px; height:6px; display:flex; flex-direction:column; background:repeating-linear-gradient(90deg, #e2a50e 0, #e2a50e 72px, #00000000 72px, #00000000 120px)">
+  </div>
+  <div style="display:flex; flex-direction:row">
+    <p style="padding:6px 22px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; font-weight:600; color:#2a1e00; background:#e2a50e; border-radius:256px">규칙 ④</p>
+  </div>
+  <h2 style="font-family:'Do Hyeon', Arial, sans-serif; font-size:72px; font-weight:400; line-height:1.15; color:#1b2024">바로 앞 칸이 빈 차만, 같은 색끼리 동시에</h2>
+  <div style="display:flex; flex-direction:column; gap:48px; justify-content:center; flex:1">
+    <div style="display:flex; flex-direction:row; gap:40px; align-items:center; justify-content:center">
+      <div style="display:flex; flex-direction:column; gap:16px; align-items:center">
+        <div class="bb" role="img" aria-label="한 줄에 빨간 차 세 대: 앞이 빈 두 번째 차에만 점선 표시" data-b="RR..R" data-mode="static" data-c="R" data-show="amber" style="width:600px;height:120px"></div>
+        <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; color:#4f5860">빨강 차례 전</p>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:12px; align-items:center">
+        <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; font-weight:600; color:#c0392b">빨강 차례</p>
+        <div class="arrow-r" style="width:120px; height:60px; background:#1b2024"></div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:16px; align-items:center">
+        <div class="bb" role="img" aria-label="빨강 차례 뒤: 두 번째 차만 한 칸 앞으로 갔고 첫 번째 차는 그대로" data-b="RR..R" data-mode="half" data-c="R" data-show="amber" data-after="arrive" data-at="1100" style="width:600px;height:120px"></div>
+        <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; color:#4f5860">빨강 차례 뒤</p>
+      </div>
+    </div>
+    <div style="display:flex; flex-direction:row; gap:32px; align-items:center; padding:36px 48px; background:#fafbfa; border:2px solid #d3d9dc; border-radius:24px">
+      <span class="ic" aria-hidden="true" style="width:64px; height:64px; color:#b3261e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></span>
+      <p style="flex:1; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.45; color:#1b2024">맨 앞 차는 왜 못 움직였을까? 앞차가 떠난 칸에 뒤차가 <b>바로 들어가지 않아요</b>.<br>갈 수 있는 차를 먼저 모두 표시하고, 한꺼번에 옮기세요.</p>
+    </div>
+  </div>
+  <aside>가장 많이 틀리는 규칙입니다. 첫 번째 차의 앞은 차례가 시작될 때 막혀 있었으므로, 두 번째 차가 떠나도 이번 차례에는 움직이지 않습니다. 오른쪽 끝의 차는 앞(같은 줄 맨 왼쪽)이 막혀 있어서 그대로입니다. 다음 장부터 '① ○× 표시하기 → ② ○ 차만 한꺼번에 옮기기' 두 단계를 예제로 익힙니다.</aside>
+</section>
+<section id="rule4how" data-period="5400" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ④ 익히기</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">먼저 표시하고, 한꺼번에 옮기기</h2>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;justify-content:center;gap:28px">
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+<svg aria-label="예제 1 처음: 2줄 가열과 나열에 빨간 차" viewBox="0 0 290 290" width="290" height="290"><rect x="5" y="5" width="280.0" height="280.0" fill="#F9FBFA"/><line x1="98.3" y1="5" x2="98.3" y2="285.0" stroke="#9AA4AA" stroke-width="1.9"/><line x1="5" y1="98.3" x2="285.0" y2="98.3" stroke="#9AA4AA" stroke-width="1.9"/><line x1="191.7" y1="5" x2="191.7" y2="285.0" stroke="#9AA4AA" stroke-width="1.9"/><line x1="5" y1="191.7" x2="285.0" y2="191.7" stroke="#9AA4AA" stroke-width="1.9"/><polygon points="18.1,111.4 57.3,111.4 85.3,145.0 57.3,178.6 18.1,178.6" fill="#C0392B" stroke="#82231A" stroke-width="3.7" stroke-linejoin="round"/><polygon points="111.4,111.4 150.6,111.4 178.6,145.0 150.6,178.6 111.4,178.6" fill="#C0392B" stroke="#82231A" stroke-width="3.7" stroke-linejoin="round"/><rect x="5" y="5" width="280.0" height="280.0" fill="none" stroke="#1B2024" stroke-width="4.7"/></svg>
+<p style="font-size:30px;font-weight:600;color:#1B2024">예제 1 · 빨강 차례</p>
+</div>
+<div class="arrow-r" style="width:80px;height:40px;background:#1B2024"></div>
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+<svg aria-label="① 표시하기: 2가 차는 ×, 2나 차는 ○, 2다 칸에 점선" viewBox="0 0 290 290" width="290" height="290"><rect x="5" y="5" width="280.0" height="280.0" fill="#F9FBFA"/><line x1="98.3" y1="5" x2="98.3" y2="285.0" stroke="#9AA4AA" stroke-width="1.9"/><line x1="5" y1="98.3" x2="285.0" y2="98.3" stroke="#9AA4AA" stroke-width="1.9"/><line x1="191.7" y1="5" x2="191.7" y2="285.0" stroke="#9AA4AA" stroke-width="1.9"/><line x1="5" y1="191.7" x2="285.0" y2="191.7" stroke="#9AA4AA" stroke-width="1.9"/><rect x="200.1" y="106.7" width="76.5" height="76.5" rx="9.3" fill="none" stroke="#1D7344" stroke-width="4.7" stroke-dasharray="11.2 7.5"/><polygon points="18.1,111.4 57.3,111.4 85.3,145.0 57.3,178.6 18.1,178.6" fill="#C0392B" stroke="#82231A" stroke-width="3.7" stroke-linejoin="round" opacity="0.45"/><circle cx="77.8" cy="118.9" r="15.9" fill="#B3261E"/><path d="M71.3 112.3L84.3 125.4M84.3 112.3L71.3 125.4" stroke="#FFFFFF" stroke-width="4.7" stroke-linecap="round"/><rect x="101.1" y="101.1" width="87.7" height="87.7" fill="none" stroke="#1D7344" stroke-width="5.6"/><polygon points="111.4,111.4 150.6,111.4 178.6,145.0 150.6,178.6 111.4,178.6" fill="#C0392B" stroke="#82231A" stroke-width="3.7" stroke-linejoin="round"/><circle cx="171.1" cy="118.9" r="15.9" fill="#FFFFFF" stroke="#1D7344" stroke-width="2.8"/><circle cx="171.1" cy="118.9" r="7.9" fill="none" stroke="#1D7344" stroke-width="4.7"/><rect x="5" y="5" width="280.0" height="280.0" fill="none" stroke="#1B2024" stroke-width="4.7"/></svg>
+<p style="font-size:30px;font-weight:600;color:#1D7344">① 표시하기</p>
+</div>
+<div class="arrow-r" style="width:80px;height:40px;background:#1B2024"></div>
+<div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+<div class="bb" role="img" aria-label="② 옮긴 뒤: 2가와 2다에 빨간 차" data-b="... RR. ..." data-mode="half" data-c="R" data-show="ox" data-at="1700" style="width:290px;height:290px"></div>
+<p style="font-size:30px;font-weight:600;color:#1D7344">② ○ 차만 한꺼번에</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:32px">
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:24px 32px">
+<h3 style="font-size:32px;font-weight:600">① 표시하기 <span style="color:#1D7344">○</span> / <span style="color:#B3261E">×</span></h3>
+<p style="font-size:28px;line-height:1.45">이번 차례 색의 차마다 바로 앞 칸을 봐요. 비었으면 ○, 차가 있으면 ×. 아직 아무 차도 옮기지 않아요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:8px;background:#FBF0CF;border:2px solid #E2A50E;border-radius:20px;padding:24px 32px">
+<h3 style="font-size:32px;font-weight:600">② 옮기기</h3>
+<p style="font-size:28px;line-height:1.45">○ 차만 한꺼번에 한 칸씩. × 차는 앞차가 이번 차례에 떠나도 그대로예요.</p>
+</div>
+</div>
+<aside>규칙 ④를 손으로 할 때 가장 많이 하는 실수는 차를 하나씩 옮기다가, 앞차가 비운 칸에 뒤차까지 옮기는 것입니다. 그래서 차례마다 두 단계로 나눕니다. ① 이번 차례 색의 차를 모두 보고 갈 수 있는 차(○)와 막힌 차(×)를 표시하기(이때는 아무것도 옮기지 않음), ② ○ 차만 한꺼번에 옮기기. 교사 화면 '규칙 익히기' 탭의 예제 1을 띄우고 '① 빨강 차 ○× 표시하기'를 누르기 전에 학생들에게 어느 차가 갈 수 있는지 먼저 물어보세요. 표시가 뜬 뒤 '② ○ 차만 한꺼번에 옮기기'를 누르면 ○ 차만 미끄러져 가고 × 차는 멈칫합니다. 예제 2는 같은 상황의 파란 차입니다. 다음 두 장의 예제를 본 뒤, 활동지 2번 '표시하고 옮기기 연습'을 풉니다(답은 교사용 안내).</aside>
+</section>
+<section id="rule4ex" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ④ 예제</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">어느 차가 갈 수 있을까? ○와 ×부터</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:32px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 3 · 빨강 차례</h3>
+<svg aria-label="예제 3: 2줄이 빨간 차로 꽉 참" viewBox="0 0 320 320" width="320" height="320"><rect x="6" y="6" width="308.0" height="308.0" fill="#F9FBFA"/><line x1="108.7" y1="6" x2="108.7" y2="314.0" stroke="#9AA4AA" stroke-width="2.1"/><line x1="6" y1="108.7" x2="314.0" y2="108.7" stroke="#9AA4AA" stroke-width="2.1"/><line x1="211.3" y1="6" x2="211.3" y2="314.0" stroke="#9AA4AA" stroke-width="2.1"/><line x1="6" y1="211.3" x2="314.0" y2="211.3" stroke="#9AA4AA" stroke-width="2.1"/><polygon points="20.4,123.0 63.5,123.0 94.3,160.0 63.5,197.0 20.4,197.0" fill="#C0392B" stroke="#82231A" stroke-width="4.1" stroke-linejoin="round"/><polygon points="123.0,123.0 166.2,123.0 197.0,160.0 166.2,197.0 123.0,197.0" fill="#C0392B" stroke="#82231A" stroke-width="4.1" stroke-linejoin="round"/><polygon points="225.7,123.0 268.8,123.0 299.6,160.0 268.8,197.0 225.7,197.0" fill="#C0392B" stroke="#82231A" stroke-width="4.1" stroke-linejoin="round"/><rect x="6" y="6" width="308.0" height="308.0" fill="none" stroke="#1B2024" stroke-width="5.1"/></svg><p style="font-size:28px;line-height:1.45;align-self:stretch">빨간 차 세 대가 한 줄을 꽉 채웠어요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 4 · 1라운드</h3>
+<svg aria-label="예제 4: 1나에 파란 차, 2가에 빨간 차" viewBox="0 0 320 320" width="320" height="320"><rect x="6" y="6" width="308.0" height="308.0" fill="#F9FBFA"/><line x1="108.7" y1="6" x2="108.7" y2="314.0" stroke="#9AA4AA" stroke-width="2.1"/><line x1="6" y1="108.7" x2="314.0" y2="108.7" stroke="#9AA4AA" stroke-width="2.1"/><line x1="211.3" y1="6" x2="211.3" y2="314.0" stroke="#9AA4AA" stroke-width="2.1"/><line x1="6" y1="211.3" x2="314.0" y2="211.3" stroke="#9AA4AA" stroke-width="2.1"/><polygon points="123.0,20.4 197.0,20.4 197.0,63.5 160.0,94.3 123.0,63.5" fill="#5DA9E9" stroke="#28649F" stroke-width="4.1" stroke-linejoin="round"/><polygon points="20.4,123.0 63.5,123.0 94.3,160.0 63.5,197.0 20.4,197.0" fill="#C0392B" stroke="#82231A" stroke-width="4.1" stroke-linejoin="round"/><rect x="6" y="6" width="308.0" height="308.0" fill="none" stroke="#1B2024" stroke-width="5.1"/></svg><p style="font-size:28px;line-height:1.45;align-self:stretch">빨강 차례 → 파랑 차례. 파란 차는 갈 수 있을까?</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 5 · 빨강 차례</h3>
+<svg aria-label="예제 5: 4×4 판에 빨간 차 5대, 파란 차 4대" viewBox="0 0 320 320" width="320" height="320"><rect x="6" y="6" width="308.0" height="308.0" fill="#F9FBFA"/><line x1="83.0" y1="6" x2="83.0" y2="314.0" stroke="#9AA4AA" stroke-width="1.5"/><line x1="6" y1="83.0" x2="314.0" y2="83.0" stroke="#9AA4AA" stroke-width="1.5"/><line x1="160.0" y1="6" x2="160.0" y2="314.0" stroke="#9AA4AA" stroke-width="1.5"/><line x1="6" y1="160.0" x2="314.0" y2="160.0" stroke="#9AA4AA" stroke-width="1.5"/><line x1="237.0" y1="6" x2="237.0" y2="314.0" stroke="#9AA4AA" stroke-width="1.5"/><line x1="6" y1="237.0" x2="314.0" y2="237.0" stroke="#9AA4AA" stroke-width="1.5"/><polygon points="16.8,16.8 49.1,16.8 72.2,44.5 49.1,72.2 16.8,72.2" fill="#C0392B" stroke="#82231A" stroke-width="3.1" stroke-linejoin="round"/><polygon points="93.8,16.8 126.1,16.8 149.2,44.5 126.1,72.2 93.8,72.2" fill="#C0392B" stroke="#82231A" stroke-width="3.1" stroke-linejoin="round"/><polygon points="247.8,16.8 303.2,16.8 303.2,49.1 275.5,72.2 247.8,49.1" fill="#5DA9E9" stroke="#28649F" stroke-width="3.1" stroke-linejoin="round"/><polygon points="247.8,93.8 303.2,93.8 303.2,126.1 275.5,149.2 247.8,126.1" fill="#5DA9E9" stroke="#28649F" stroke-width="3.1" stroke-linejoin="round"/><polygon points="16.8,170.8 72.2,170.8 72.2,203.1 44.5,226.2 16.8,203.1" fill="#5DA9E9" stroke="#28649F" stroke-width="3.1" stroke-linejoin="round"/><polygon points="93.8,170.8 126.1,170.8 149.2,198.5 126.1,226.2 93.8,226.2" fill="#C0392B" stroke="#82231A" stroke-width="3.1" stroke-linejoin="round"/><polygon points="170.8,170.8 203.1,170.8 226.2,198.5 203.1,226.2 170.8,226.2" fill="#C0392B" stroke="#82231A" stroke-width="3.1" stroke-linejoin="round"/><polygon points="247.8,170.8 280.1,170.8 303.2,198.5 280.1,226.2 247.8,226.2" fill="#C0392B" stroke="#82231A" stroke-width="3.1" stroke-linejoin="round"/><polygon points="170.8,247.8 226.2,247.8 226.2,280.1 198.5,303.2 170.8,280.1" fill="#5DA9E9" stroke="#28649F" stroke-width="3.1" stroke-linejoin="round"/><rect x="6" y="6" width="308.0" height="308.0" fill="none" stroke="#1B2024" stroke-width="3.9"/></svg><p style="font-size:28px;line-height:1.45;align-self:stretch">빨간 차 5대에 ○와 ×를 표시해 보세요.</p>
+</div>
+</div>
+<aside>짝과 말로 먼저 답해 보게 한 뒤 다음 슬라이드로 답을 봅니다. 교사 화면 '규칙 익히기'의 예제 3·4(3×3)와 예제 5(4×4 맨 끝)에서 '① 표시하기 → ② 옮기기'로 직접 돌려 보여 줘도 좋습니다. 예제 3은 꽉 찬 줄이라 모두 ×, 예제 4는 빨강이 먼저 움직인 뒤의 판을 보고 파랑을 표시해야 한다는 점(규칙 ③), 예제 5는 판 끝을 넘는 앞 칸(규칙 ②)까지 함께 확인하는 문제입니다.</aside>
+</section>
+<section id="rule4ans" data-period="7200" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">규칙 ④ 예제 · 답</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">○ 차만 한꺼번에, × 차는 그대로</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:32px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 3 · 모두 ×</h3>
+<div class="bb" role="img" aria-label="예제 3 답: 세 차 모두 ×" data-b="... RRR ..." data-mode="half" data-c="R" data-show="ox" data-at="1500" style="width:320px;height:320px"></div><p style="font-size:28px;line-height:1.45;align-self:stretch">맨 오른쪽 차의 앞은 같은 줄 맨 왼쪽 칸이고, 거기도 차가 있어요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 4 · 파랑은 ×</h3>
+<div style="display:flex;flex-direction:row;gap:12px;align-items:center">
+<div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div class="bb" role="img" aria-label="예제 4 빨강 차례 표시: 2가 ○" data-b=".B. R.. ..." data-mode="half" data-c="R" data-show="ox" data-after="arrive" data-at="1500" style="width:200px;height:200px"></div><p style="font-size:24px;font-weight:600;color:#C0392B">빨강 ①</p></div>
+<div class="arrow-r" style="width:44px;height:24px;background:#1B2024"></div>
+<div style="display:flex;flex-direction:column;gap:6px;align-items:center"><div class="bb" role="img" aria-label="예제 4 파랑 차례 표시: 빨간 차가 2나로 온 뒤 1나 파란 차 ×" data-b=".B. .R. ..." data-mode="half" data-c="B" data-show="ox" data-at="3900" style="width:200px;height:200px"></div><p style="font-size:24px;font-weight:600;color:#1F6FB2">파랑 ①</p></div>
+</div>
+<p style="font-size:28px;line-height:1.45;align-self:stretch">빨간 차가 먼저 파란 차 바로 아래로 왔어요. 파랑은 바뀐 판을 보고 표시해요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;align-items:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 28px">
+<h3 style="font-size:32px;font-weight:600;align-self:flex-start">예제 5 · ○는 하나</h3>
+<div class="bb" role="img" aria-label="예제 5 답: 1나 차만 ○, 나머지 빨간 차 ×" data-b="RR.B ...B BRRR ..B." data-mode="half" data-c="R" data-show="ox" data-after="arrive" data-at="1500" style="width:320px;height:320px"></div><p style="font-size:28px;line-height:1.45;align-self:stretch">첫째 줄 둘째 차만 ○. 셋째 줄 맨 오른쪽 차의 앞은 맨 왼쪽 파란 차예요.</p>
+</div>
+</div>
+<aside>답을 확인한 뒤 교사 화면에서 '② 옮기기'까지 눌러 ○ 차만 움직이는 모습을 보여 줍니다. 예제 5에서 파랑 차례까지 이어 가면, 4다의 파란 차는 앞(1다, 판 끝을 넘은 칸)에 빨간 차가 방금 들어와서 ×가 됩니다. 손 활동(활동 1)에서도 차례마다 ○×를 먼저 짚고 옮기게 하세요.</aside>
+</section>
+<section id="record" data-period="11500" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">라운드 기록</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">라운드마다 판을 기록하면 보이는 것</h2>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:48px">
+<div style="display:flex;flex-direction:row;justify-content:center;gap:24px">
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#E9E6FA;border:4px solid #6A5ACD;border-radius:20px;padding:20px">
+<p style="font-size:30px;font-weight:600;color:#5A4BC0">처음</p>
+<div class="bb" role="img" aria-label="처음 판" data-b="BB. RR. ..." data-mode="static" style="width:180px;height:180px"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:22px">
+<p style="font-size:30px;font-weight:600">1라운드</p>
+<div class="bb" role="img" aria-label="1라운드 뒤 판" data-b="BB. RR. ..." data-mode="round" data-rounds="0" data-at="700" style="width:180px;height:180px"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:22px">
+<p style="font-size:30px;font-weight:600">2라운드</p>
+<div class="bb" role="img" aria-label="2라운드 뒤 판" data-b="BB. RR. ..." data-mode="round" data-rounds="1" data-at="2400" style="width:180px;height:180px"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:22px">
+<p style="font-size:30px;font-weight:600">3라운드</p>
+<div class="bb" role="img" aria-label="3라운드 뒤 판" data-b="BB. RR. ..." data-mode="round" data-rounds="2" data-at="4100" style="width:180px;height:180px"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:22px">
+<p style="font-size:30px;font-weight:600">4라운드</p>
+<div class="bb" role="img" aria-label="4라운드 뒤 판" data-b="BB. RR. ..." data-mode="round" data-rounds="3" data-at="5800" style="width:180px;height:180px"></div>
+</div>
+<div style="display:flex;flex-direction:column;align-items:center;gap:16px;background:#E9E6FA;border:4px solid #6A5ACD;border-radius:20px;padding:20px">
+<p style="font-size:30px;font-weight:600;color:#5A4BC0">5라운드</p>
+<div class="bb" role="img" aria-label="5라운드 뒤 판: 처음 판과 같은 모습" data-b="BB. RR. ..." data-mode="round" data-rounds="4" data-at="7500" style="width:180px;height:180px"></div>
+</div>
+</div>
+<p style="font-family:'Do Hyeon', Arial, sans-serif;font-size:56px;text-align:center;color:#5A4BC0">5라운드 모습 = 처음 모습 → 이제부터 5라운드마다 되풀이</p>
+</div>
+<aside>시연 ③의 라운드 기록입니다. 시연할 때는 교사 화면 '규칙 익히기' 탭에서 '같은 모습 자동으로 찾기'를 끄고 한 라운드씩 진행하면서 "앞에서 본 모습이 또 나왔나?"를 물어 보세요. 학생들이 찾은 뒤에 이 슬라이드로 정리합니다.</aside>
+</section>
+<section id="verdict" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">판정 기준</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">고정일까, 반복일까?</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:48px">
+<div style="flex:1;display:flex;flex-direction:column;gap:18px;background:#FBE4E1;border:3px solid #B3261E;border-radius:24px;padding:40px">
+<h3 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:64px;font-weight:400;color:#B3261E">고정</h3>
+<p style="font-size:40px;font-weight:600;line-height:1.4">한 라운드 동안<br>아무 차도 움직이지 못한다</p>
+<p style="font-size:32px;line-height:1.45;color:#4F5860">→ 영원히 그 모습 그대로</p>
+<div style="margin-top:auto;align-self:center"><div class="bb" role="img" aria-label="시연 ①: 몇 라운드 움직이다 모두 멈추는 판" data-b="BBR RR. B.." data-mode="flow" data-until="fixed" data-dur="460" style="width:170px;height:170px"></div></div>
+</div>
+<div style="flex:1.3;display:flex;flex-direction:column;gap:18px;background:#E9E6FA;border:3px solid #6A5ACD;border-radius:24px;padding:40px">
+<h3 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:64px;font-weight:400;color:#5A4BC0">반복</h3>
+<p style="font-size:40px;font-weight:600;line-height:1.4">전에 나온 판 모습이<br>다시 나온다</p>
+<p style="font-size:32px;line-height:1.45;color:#4F5860">→ 그때부터 같은 움직임이 되풀이</p>
+<div style="display:flex;flex-direction:row;gap:20px">
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:16px;background:#DCF1E4;color:#1D7344;padding:12px 16px 12px 24px;border-radius:16px"><p style="flex:1;font-size:30px;line-height:1.4"><b>모두 움직임</b><br>모든 차가 쉬지 않고</p><div class="bb" role="img" aria-label="시연 ②: 모든 차가 쉬지 않고 움직이는 판" data-b=".BR BR. ..." data-mode="flow" data-max="6" data-dur="460" style="width:116px;height:116px"></div></div>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:16px;background:#FAFBFA;color:#5A4BC0;padding:12px 16px 12px 24px;border-radius:16px"><p style="flex:1;font-size:30px;line-height:1.4"><b>몇 대는 기다림</b><br>앞이 막힌 차가 있다</p><div class="bb" role="img" aria-label="시연 ③: 몇 대는 기다리며 되풀이되는 판" data-b="BB. RR. ..." data-mode="flow" data-max="6" data-dur="460" style="width:116px;height:116px"></div></div>
+</div>
+</div>
+</div>
+<p style="font-size:28px;color:#4F5860">시연 ① 고정 · 시연 ② 모두 움직이는 반복 · 시연 ③ 몇 대는 기다리는 반복</p>
+<aside>세 시연을 다 본 뒤 활동지 3번의 판정 기준 빈칸을 함께 채웁니다. 고정은 '1라운드마다 같은 모습'인 반복의 특별한 경우라는 점은 1차시 정리에서 다시 다룹니다.</aside>
+</section>
+<section id="act1" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">활동 1 · 혼자 · 15분</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">3×3 판에서 직접 돌려 보기</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:64px">
+<div style="flex:1;display:flex;flex-direction:column;gap:28px;justify-content:center">
+<div style="display:flex;flex-direction:row;gap:24px;align-items:center">
+<p style="width:64px;height:64px;border-radius:50%;background:#23292E;color:#F1F4F3;font-size:32px;font-weight:600;text-align:center;line-height:2">1</p>
+<p style="flex:1;font-size:36px;line-height:1.4">연습 배치대로 3×3 판에 자동차를 놓는다</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:24px;align-items:center">
+<p style="width:64px;height:64px;border-radius:50%;background:#23292E;color:#F1F4F3;font-size:32px;font-weight:600;text-align:center;line-height:2">2</p>
+<p style="flex:1;font-size:36px;line-height:1.4">빨강 차례 → 파랑 차례로 1라운드 진행</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:24px;align-items:center">
+<p style="width:64px;height:64px;border-radius:50%;background:#23292E;color:#F1F4F3;font-size:32px;font-weight:600;text-align:center;line-height:2">3</p>
+<p style="flex:1;font-size:36px;line-height:1.4">라운드가 끝나면 판 모습을 기록 칸에 그린다</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:24px;align-items:center">
+<p style="width:64px;height:64px;border-radius:50%;background:#23292E;color:#F1F4F3;font-size:32px;font-weight:600;text-align:center;line-height:2">4</p>
+<p style="flex:1;font-size:36px;line-height:1.4">같은 모습이 다시 나오면 두 칸에 동그라미, 멈춤</p>
+</div>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px;justify-content:center">
+<div style="display:flex;flex-direction:column;gap:10px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:24px 32px">
+<h3 style="font-size:34px;font-weight:600">자동차 오리기</h3>
+<p style="font-size:30px;line-height:1.45">활동지 마지막 쪽. 가로 점선을 먼저, 세로 점선을 나중에 자르면 빨라요</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:24px 32px">
+<h3 style="font-size:34px;font-weight:600">혼자서 연습 가 → 나 → 다</h3>
+<p style="font-size:30px;line-height:1.45">움직일 차를 먼저 모두 짚고, 한꺼번에 옮기기</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:10px;background:#FBF0CF;border:2px solid #E2A50E;border-radius:24px;padding:24px 32px">
+<h3 style="font-size:34px;font-weight:600">15분 뒤 함께 점검</h3>
+<p style="font-size:30px;line-height:1.45">선생님 화면에서 한 라운드씩 같이 돌리며 내 기록과 비교해요</p>
+</div>
+</div>
+</div>
+<aside>연습 가(고정), 나(2라운드 뒤 반복), 다(처음으로 돌아오지 않는 반복) 순서로 혼자 합니다. 12~15분쯤 지나면 전자칠판에 교사 화면(주소 뒤에 /teacher)의 '규칙 익히기' 탭에서 3×3 연습 가·나·다를 띄우고, '같은 모습 자동으로 찾기'를 끈 채 한 라운드씩 진행하며 학생들의 기록과 비교합니다. 연습 다에서 "처음 모습이 다시 안 나오는데 반복일까?"를 꼭 짚어 주세요. 기록 칸은 파랑 차례까지 끝난 모습만 그립니다. 손 활동 중에는 차례마다 ○×를 먼저 짚고 옮기는지 둘러보세요. 함께 점검할 때 교사 화면의 '두 단계로 진행'을 켜 두면 차례마다 ○× 표시를 보여 준 뒤 옮기므로 학생 기록과 비교하기 좋고, 빨리 넘기려면 끄면 됩니다.</aside>
+</section>
+<section id="act2" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:128px 128px 160px; background:#eef1f0">
+  <div style="position:absolute; bottom:0; left:0; width:1920px; height:36px; display:flex; flex-direction:column; background:#23292e">
+  </div>
+  <div style="position:absolute; bottom:15px; left:0; width:1920px; height:6px; display:flex; flex-direction:column; background:repeating-linear-gradient(90deg, #e2a50e 0, #e2a50e 72px, #00000000 72px, #00000000 120px)">
+  </div>
+  <div style="display:flex; flex-direction:row">
+    <p style="padding:6px 22px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; font-weight:600; color:#2a1e00; background:#e2a50e; border-radius:256px">활동 2 · 7분</p>
+  </div>
+  <h2 style="font-family:'Do Hyeon', Arial, sans-serif; font-size:72px; font-weight:400; line-height:1.15; color:#1b2024">4×4: 먼저 예상하고, 함께 확인하기</h2>
+  <div style="display:flex; flex-direction:row; gap:32px; align-items:center; justify-content:space-between; flex:1">
+    <div style="display:flex; flex-direction:column; gap:20px; align-items:center">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; color:#1b2024">4×4 ①</p>
+      <div class="bb" role="img" aria-label="4×4 배치 ①" data-b="B.R. RR.R BB.. B..." data-mode="static" style="width:260px;height:260px"></div>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; color:#4f5860">고정? 반복?</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; align-items:center">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; color:#1b2024">4×4 ②</p>
+      <div class="bb" role="img" aria-label="4×4 배치 ②" data-b=".BR. BR.. .R.. R.BB" data-mode="static" style="width:260px;height:260px"></div>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; color:#4f5860">고정? 반복?</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; align-items:center">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; color:#1b2024">4×4 ③</p>
+      <div class="bb" role="img" aria-label="4×4 배치 ③" data-b="..RR .... B.B. RBRB" data-mode="static" style="width:260px;height:260px"></div>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; color:#4f5860">고정? 반복?</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:20px; align-items:center">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; color:#1b2024">4×4 ④</p>
+      <div class="bb" role="img" aria-label="4×4 배치 ④" data-b="RR.R ...B .B.. RB.B" data-mode="static" style="width:260px;height:260px"></div>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; color:#4f5860">고정? 반복?</p>
+    </div>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px; align-items:center; padding:24px 40px; background:#23292e; border-radius:20px">
+    <span class="ic" aria-hidden="true" style="width:48px; height:48px; color:#e2a50e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span>
+    <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; color:#f1f4f3">예상 적기 → 4×4 판에 놓고 돌려 보기 → 선생님 화면으로 함께 확인</p>
+  </div>
+  <aside>활동지 5번 표에 예상을 먼저 적게 하고, 활동지 마지막 쪽 4×4 판에 자동차를 놓아 할 수 있는 만큼 돌려 보게 합니다. 몇 분 뒤 교사 화면 '규칙 익히기 → 4×4 → ①~④'를 함께 돌리며 결과와 '몇 라운드마다'를 확인합니다. 학생 화면(무작위 실험)은 2차시에만 쓰므로 1차시에는 학생 노트북이 필요하지 않습니다.</aside>
+</section>
+<section id="wrap1" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:128px 128px 160px; background:#23292e">
+  <div style="position:absolute; bottom:80px; left:0; width:1920px; height:12px; display:flex; flex-direction:column; background:repeating-linear-gradient(90deg, #e2a50e 0, #e2a50e 96px, #00000000 96px, #00000000 160px)">
+  </div>
+  <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:32px; font-weight:600; letter-spacing:2px; color:#e2a50e">1차시 정리</p>
+  <h2 style="font-family:'Do Hyeon', Arial, sans-serif; font-size:88px; font-weight:400; line-height:1.15; color:#f1f4f3">어떤 배치든 결국<br>고정 아니면 반복이다. 왜일까?</h2>
+  <div style="display:flex; flex-direction:row; gap:48px; align-items:center; flex:1">
+    <div style="display:flex; flex-direction:column; gap:12px; flex:1; padding:40px; background:#2e363c; border-radius:24px">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; color:#a9b3b8">3×3 판의 모습은 몇 가지?</p>
+      <p style="font-family:'Do Hyeon', Arial, sans-serif; font-size:96px; color:#e2a50e">3⁹ = 19683</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:30px; line-height:1.45; color:#c9d1d5">칸마다 빈칸·빨강·파랑 세 가지, 칸은 9개</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:24px; flex:1.4">
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.5; color:#f1f4f3"><b>모습의 수가 정해져 있다</b>&nbsp;<br>→ 계속 돌리면 언젠가 같은 모습이 다시 나온다</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.5; color:#f1f4f3"><b>다음 모습은 지금 모습만으로 정해진다</b>&nbsp;<br>→ 같은 모습 뒤에는 똑같은 움직임이 되풀이된다</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:32px; line-height:1.5; color:#a9b3b8">고정은 '1라운드마다 같은 모습'인 반복의 특별한 경우</p>
+    </div>
+  </div>
+  <aside>활동지 6번 빈칸을 먼저 채워 보게 한 다음 이 슬라이드로 정리합니다. 19683가지 모습이 있으니 19684라운드를 돌리면 처음 모습까지 19685개의 모습이 나와서 어느 두 개는 반드시 같습니다(비둘기집 원리). 실제로는 차의 수가 정해져 있어서 훨씬 일찍 나옵니다.</aside>
+</section>
+<section id="part2" data-transition="push" style="background:#E2A50E;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px;display:flex;flex-direction:row;align-items:center;justify-content:space-between;gap:96px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:120px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:54px;width:1920px;height:12px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 96px, transparent 96px, transparent 160px)"></div>
+<div style="flex:1;display:flex;flex-direction:column;gap:32px">
+<p style="font-size:36px;font-weight:600;color:#3A2A00">2차시</p>
+<h1 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:150px;font-weight:400;line-height:1.05;color:#1B2024">우연 속<br>규칙 찾기</h1>
+<p style="font-size:44px;line-height:1.45;color:#2A1E00">차를 아무렇게나 놓으면 고정일까, 반복일까?<br>예상하고 확인하며 우리 반 그래프를 만들어 보자.</p>
+</div>
+<div class="bb" role="img" aria-label="빈 5×5 판" data-b="..... ..... ..... ..... ....." data-mode="random" data-counts="12 18 14 20 16" style="width:400px;height:400px"></div>
+<aside>지난 시간에 고정과 반복을 구별하는 법을 익혔습니다. 오늘은 5×5 판에 앱이 차를 아무렇게나 놓으면 고정이 될지 반복이 될지 예상하고 확인하는 실험을 충분히 합니다. 한 번 한 번의 결과는 들쭉날쭉하지만, 반 전체의 결과가 쌓이면 차 수에 따라 고정이 나오는 비율이 또렷한 그래프로 드러납니다. 그 그래프를 함께 읽은 뒤, 판을 키우면 그래프가 어떻게 바뀌는지 봅니다. 수업 전에 대시보드에서 반을 고르고 '새로 시작'을 눌러 시험해 본 기록을 치워 두세요.</aside>
+</section>
+<section id="join" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:128px 128px 160px; background:#eef1f0">
+  <div style="position:absolute; bottom:0; left:0; width:1920px; height:36px; display:flex; flex-direction:column; background:#23292e">
+  </div>
+  <div style="position:absolute; bottom:15px; left:0; width:1920px; height:6px; display:flex; flex-direction:column; background:repeating-linear-gradient(90deg, #e2a50e 0, #e2a50e 72px, #00000000 72px, #00000000 120px)">
+  </div>
+  <div style="display:flex; flex-direction:row">
+    <p style="padding:6px 22px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:28px; font-weight:600; color:#2a1e00; background:#e2a50e; border-radius:256px">접속하기</p>
+  </div>
+  <h2 style="font-family:'Do Hyeon', Arial, sans-serif; font-size:72px; font-weight:400; line-height:1.15; color:#1b2024">노트북으로 접속해요</h2>
+  <div style="display:flex; flex-direction:row; gap:32px; align-items:center; padding:40px 56px; background:#23292e; border-radius:24px">
+    <span class="ic" aria-hidden="true" style="width:72px; height:72px; color:#e2a50e"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></span>
+    <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:72px; font-weight:600; letter-spacing:1px; color:#f1f4f3">숏.한국/우중T/교통모형</p>
+  </div>
+  <div style="display:flex; flex-direction:row; gap:32px; flex:1">
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fafbfa; border:2px solid #d3d9dc; border-radius:24px">
+      <p style="font-family:'Do Hyeon', Arial, sans-serif; font-size:56px; color:#8a5a00">1</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.4; color:#1b2024">첫 화면에서 <b>반</b> 고르기</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fafbfa; border:2px solid #d3d9dc; border-radius:24px">
+      <p style="font-family:'Do Hyeon', Arial, sans-serif; font-size:56px; color:#8a5a00">2</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.4; color:#1b2024"><b>학번</b> 다섯 자리 입력</p>
+    </div>
+    <div style="display:flex; flex-direction:column; gap:16px; flex:1; padding:36px; background:#fafbfa; border:2px solid #d3d9dc; border-radius:24px">
+      <p style="font-family:'Do Hyeon', Arial, sans-serif; font-size:56px; color:#8a5a00">3</p>
+      <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; line-height:1.4; color:#1b2024"><b>시작하기</b> 누르면 준비 끝</p>
+    </div>
+  </div>
+  <aside>학번은 다섯 자리 숫자(예: 10101)입니다. 다른 친구 학번으로 들어가지 않도록 처음에 한 번 확인해 주세요. 반 목록에 반이 안 보이면 교사 대시보드의 '반 목록'에서 추가합니다.</aside>
+</section>
+<section id="random" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">무작위 실험 · 20분</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">예상하고, 확인하고, 또 예상하기</h2>
+<p style="font-size:36px;line-height:1.45">지난 시간: 같은 차 수라도 놓는 방법에 따라 고정도, 반복도 됐어요.<br>오늘은 앱이 <b>아무렇게나</b> 놓아요. 결과를 미리 맞힐 수 있을까?</p>
+<div style="display:flex;flex-direction:row;align-items:center;gap:16px">
+<p style="flex:1;font-size:30px;line-height:1.4;font-weight:600;text-align:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:24px 16px">무작위로<br>놓기</p>
+<div class="arrow-r" style="width:56px;height:28px;background:#1B2024"></div>
+<p style="flex:1;font-size:30px;line-height:1.4;font-weight:600;text-align:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:24px 16px">고정? 반복?<br>예상 고르기</p>
+<div class="arrow-r" style="width:56px;height:28px;background:#1B2024"></div>
+<p style="flex:1;font-size:30px;line-height:1.4;font-weight:600;text-align:center;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:24px 16px">돌려 보고<br>결과 확인</p>
+<div class="arrow-r" style="width:56px;height:28px;background:#1B2024"></div>
+<p style="flex:1;font-size:30px;line-height:1.4;font-weight:600;text-align:center;background:#E2A50E;color:#2A1E00;border:2px solid #E2A50E;border-radius:20px;padding:24px 16px">다음 실험</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;justify-content:center;gap:20px">
+<div style="display:flex;flex-direction:row;gap:20px;align-items:center">
+<span class="ic" aria-hidden="true" style="color:#1D7344;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg></span>
+<p style="flex:1;font-size:32px;line-height:1.4">예상이 맞으면 <b>1점</b>! 많이 할수록 점수를 올릴 기회도 많아요.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:20px;align-items:center">
+<span class="ic" aria-hidden="true" style="color:#1D7344;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3.2"/><circle cx="12" cy="12" r="7.2"/><line x1="19.20" y1="12.00" x2="22.60" y2="12.00" stroke-width="3"/><line x1="17.09" y1="17.09" x2="19.50" y2="19.50" stroke-width="3"/><line x1="12.00" y1="19.20" x2="12.00" y2="22.60" stroke-width="3"/><line x1="6.91" y1="17.09" x2="4.50" y2="19.50" stroke-width="3"/><line x1="4.80" y1="12.00" x2="1.40" y2="12.00" stroke-width="3"/><line x1="6.91" y1="6.91" x2="4.50" y2="4.50" stroke-width="3"/><line x1="12.00" y1="4.80" x2="12.00" y2="1.40" stroke-width="3"/><line x1="17.09" y1="6.91" x2="19.50" y2="4.50" stroke-width="3"/></svg></span>
+<p style="flex:1;font-size:32px;line-height:1.4">차 수(10~22대)는 앱이 정해요. 일곱 가지가 한 바퀴씩 섞여서 나와요.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:20px;align-items:center">
+<span class="ic" aria-hidden="true" style="color:#1D7344;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+<p style="flex:1;font-size:32px;line-height:1.4">다시 놓기 없이 <b>나온 그대로</b> 실험해요. 결과는 모여서 우리 반 그래프가 돼요.</p>
+</div>
+<div style="display:flex;flex-direction:row;gap:20px;align-items:center">
+<span class="ic" aria-hidden="true" style="color:#1D7344;width:44px;height:44px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg></span>
+<p style="flex:1;font-size:32px;line-height:1.4">시작 전에 활동지 7번 ①에 '10번 하면 몇 번 고정일지' 먼저 예상해요.</p>
+</div>
+</div>
+<aside>접속이 끝나면 활동지 7번 ①에 차 수마다 '10번 하면 몇 번 고정일지'를 감으로 적게 한 뒤(1분), 대시보드에서 '학생 화면에서 실험 열기'를 켭니다. 차 수(10·12·…·22대)는 학생마다 일곱 가지가 한 바퀴에 한 번씩, 순서를 섞어서 나오므로 한 사람도 반 전체도 고르게 쌓입니다. 한 번에 30~40초쯤 걸리니 한 사람이 20번 넘게 할 수 있습니다. 학생들은 활동지 7번 ②에 실험마다 차 수, 예상, 결과를 적습니다. 대시보드 막대그래프를 '크게 보기'로 띄워 두면 실험이 쌓이며 막대가 자리를 잡아 가는 모습이 보입니다. 7~8분쯤 지나면 잠깐 멈추고 "지금 그래프로 결론을 내도 될까?"를 물은 뒤, 활동지 7번 ③에 지금의 16대·18대 막대 숫자를 적게 하고 다시 실험합니다. 다시 놓기를 막아 둔 까닭(고르면 무작위가 아님)도 짚어 주세요. 대시보드 위쪽의 '예상 적중률'과 '예상왕'을 중간중간 알려 주면 실험을 이어 가는 힘이 됩니다.</aside>
+</section>
+<section id="randread" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:36px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">우리 반 그래프 읽기 · 7분</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">실험이 쌓이니 보이는 것</h2>
+<div style="display:flex;flex-direction:column;gap:10px;background:#23292E;color:#F1F4F3;border-radius:24px;padding:30px 48px">
+<p style="font-size:44px;font-weight:600;line-height:1.3">막대 높이 = <span style="color:#E2A50E">고정이 나온 횟수</span> ÷ <span style="color:#E2A50E">그 차 수로 실험한 횟수</span></p>
+<p style="font-size:30px;line-height:1.45;color:#A9B3B8">예: 16대로 26번 실험해서 13번 고정 → 13 ÷ 26 = 0.5 (이런 값을 <b style="color:#F1F4F3">상대도수</b>라고 해요)</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:row;gap:28px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:space-between;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 32px">
+<p style="font-size:34px;line-height:1.4;font-weight:600">몇 대부터 고정이 반복보다 많아질까?</p>
+<p style="font-size:28px;line-height:1.45;color:#4F5860">막대가 절반(0.5)을 넘는 차 수 찾기</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:space-between;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 32px">
+<p style="font-size:34px;line-height:1.4;font-weight:600">실험 중간에 본 그래프와 지금은 어떻게 다를까?</p>
+<p style="font-size:28px;line-height:1.45;color:#4F5860">실험이 많아지면 막대는? 컴퓨터 4000번과도 비교</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:12px;justify-content:space-between;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:28px 32px">
+<p style="font-size:34px;line-height:1.4;font-weight:600">그래프를 봐도 맞히기 어려운 차 수는?</p>
+<p style="font-size:28px;line-height:1.45;color:#4F5860">막대가 절반쯤인 차 수는 왜 어려울까?</p>
+</div>
+</div>
+<div style="display:flex;flex-direction:row;gap:28px;align-items:center;padding:22px 40px;background:#23292E;border-radius:20px">
+<span class="ic" aria-hidden="true" style="width:48px;height:48px;color:#E2A50E"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1V17h6v-.2c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/></svg></span>
+<p style="font-size:34px;font-weight:600;color:#F1F4F3">한 번의 결과는 미리 알 수 없어도, 많이 모으면 <span style="color:#E2A50E">얼마나 자주</span> 나오는지 알 수 있어요.</p>
+</div>
+<aside>실험을 마치면 학생 화면을 잠시 덮게 하고, 대시보드 '무작위 실험' 그래프를 '크게 보기'로 띄워 함께 읽습니다. 학생들은 상대도수를 아직 배우지 않았으므로 막대 높이가 '몇 번 중 몇 번'을 나눗셈으로 나타낸 값이라고 가볍게 소개합니다(활동지에는 횟수로만 적게 했습니다). 활동지 8번 ①에 막대 위의 '고정 횟수/실험 횟수'를 옮겨 적게 합니다. 답의 방향: 16대와 18대 사이(밀도 0.64~0.72)에서 고정이 절반을 넘고, 10·12대는 거의 0, 20·22대는 거의 1입니다. 실험 중간에 적어 둔 16대·18대 숫자(활동지 7번 ③)와 비교하며 "실험이 적을 때는 막대가 들쭉날쭉했는데 많아지니 자리를 잡았다"를 끌어내고, '컴퓨터 4000번 결과 겹쳐 보기'를 켜 우리 반 막대와 비교합니다. 대시보드 위쪽의 '가장 맞히기 어려운 차 수' 카드(보통 16대)를 보며 "16대는 그래프를 봐도 왜 못 맞힐까?"를 묻고, "고정과 반복이 반반이라 한 번의 결과는 알 수 없다"가 나오면 충분합니다(중2에서 배우는 확률로 이어짐). '예상왕'에서 '학번 보이기'를 켜고 1위를 불러 준 뒤 "판을 키우면 이 그래프는 어떻게 될까?"를 묻고 큰 판 실험실로 넘어갑니다.</aside>
+</section>
+<section id="bigboard" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:32px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">판 키우기</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">판을 키우면 그래프는 어떻게 될까?</h2>
+<div style="flex:1;display:flex;flex-direction:row;align-items:center;gap:40px">
+<div style="position:relative;width:1000px;height:520px">
+<svg aria-label="판 크기별로 밀도에 따른 고정 비율 곡선. 판이 커질수록 곡선이 왼쪽으로 가고 가팔라진다" viewBox="0 0 1000 520" width="1000" height="520"><line x1="84" x2="976" y1="444.0" y2="444.0" stroke="#D3D9DC" stroke-width="2"/><line x1="84" x2="976" y1="339.0" y2="339.0" stroke="#D3D9DC" stroke-width="2"/><line x1="84" x2="976" y1="234.0" y2="234.0" stroke="#D3D9DC" stroke-width="2"/><line x1="84" x2="976" y1="129.0" y2="129.0" stroke="#D3D9DC" stroke-width="2"/><line x1="84" x2="976" y1="24.0" y2="24.0" stroke="#D3D9DC" stroke-width="2"/><line x1="84" x2="976" y1="444" y2="444" stroke="#1B2024" stroke-width="3"/><polyline points="135.0,444.0 236.9,444.0 338.9,444.0 440.8,442.7 542.7,399.9 644.7,239.0 746.6,79.9 848.6,32.8 950.5,26.5" fill="none" stroke="#6A5ACD" stroke-opacity="0.4" stroke-width="3" stroke-linejoin="round" stroke-dasharray="8 7"/><polyline points="84.0,444.0 109.5,444.0 135.0,444.0 160.5,444.0 185.9,444.0 211.4,444.0 236.9,444.0 262.4,444.0 287.9,444.0 313.4,444.0 338.9,444.0 364.3,429.3 389.8,378.9 415.3,273.9 440.8,105.9 466.3,50.0 491.8,28.2 517.3,26.9 542.7,24.0 568.2,24.8 593.7,24.0 976.0,24.0" fill="none" stroke="#6A5ACD" stroke-opacity="0.6" stroke-width="4" stroke-linejoin="round"/><polyline points="84.0,444.0 109.5,444.0 135.0,444.0 160.5,444.0 185.9,444.0 211.4,444.0 236.9,444.0 262.4,444.0 287.9,444.0 313.4,442.7 338.9,425.1 364.3,333.5 389.8,158.4 415.3,55.5 440.8,32.4 466.3,24.8 491.8,24.8 517.3,24.8 542.7,24.0 568.2,24.0 593.7,24.0 976.0,24.0" fill="none" stroke="#6A5ACD" stroke-opacity="0.8" stroke-width="5" stroke-linejoin="round"/><polyline points="84.0,444.0 109.5,444.0 135.0,444.0 160.5,444.0 185.9,444.0 211.4,444.0 236.9,444.0 262.4,444.0 287.9,441.9 313.4,406.2 338.9,288.6 364.3,160.5 389.8,82.8 415.3,45.0 440.8,26.1 466.3,26.1 491.8,24.0 517.3,24.0 542.7,24.0 568.2,24.0 593.7,24.0 976.0,24.0" fill="none" stroke="#6A5ACD" stroke-opacity="1" stroke-width="6" stroke-linejoin="round"/><line x1="721.1" x2="765.1" y1="267.6" y2="267.6" stroke="#6A5ACD" stroke-opacity="1" stroke-width="6"/><line x1="721.1" x2="765.1" y1="305.6" y2="305.6" stroke="#6A5ACD" stroke-opacity="0.8" stroke-width="5"/><line x1="721.1" x2="765.1" y1="343.6" y2="343.6" stroke="#6A5ACD" stroke-opacity="0.6" stroke-width="4"/><line x1="721.1" x2="765.1" y1="381.6" y2="381.6" stroke="#6A5ACD" stroke-opacity="0.4" stroke-width="3" stroke-dasharray="8 7"/><line x1="631.9" x2="377.1" y1="234.0" y2="234.0" stroke="#B3261E" stroke-width="4"/><polygon points="370.7,234.0 396.2,223.0 396.2,245.0" fill="#B3261E"/></svg>
+<p style="position:absolute;left:0px;top:427px;width:70px;font-size:24px;line-height:1.4;text-align:right;color:#4F5860">0.00</p>
+<p style="position:absolute;left:0px;top:322px;width:70px;font-size:24px;line-height:1.4;text-align:right;color:#4F5860">0.25</p>
+<p style="position:absolute;left:0px;top:217px;width:70px;font-size:24px;line-height:1.4;text-align:right;color:#4F5860">0.50</p>
+<p style="position:absolute;left:0px;top:112px;width:70px;font-size:24px;line-height:1.4;text-align:right;color:#4F5860">0.75</p>
+<p style="position:absolute;left:0px;top:7px;width:70px;font-size:24px;line-height:1.4;text-align:right;color:#4F5860">1.00</p>
+<p style="position:absolute;left:54px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.2</p>
+<p style="position:absolute;left:181px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.3</p>
+<p style="position:absolute;left:309px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.4</p>
+<p style="position:absolute;left:436px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.5</p>
+<p style="position:absolute;left:564px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.6</p>
+<p style="position:absolute;left:691px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.7</p>
+<p style="position:absolute;left:819px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.8</p>
+<p style="position:absolute;left:946px;top:452px;width:60px;font-size:24px;line-height:1.4;text-align:center;color:#4F5860">0.9</p>
+<p style="position:absolute;left:84px;top:482px;width:892px;font-size:26px;line-height:1.4;text-align:center;color:#1B2024">밀도 (차 수 ÷ 칸 수)</p>
+<p style="position:absolute;left:777px;top:251px;width:220px;font-size:24px;line-height:1.4;text-align:left;color:#1B2024">64×64</p>
+<p style="position:absolute;left:777px;top:289px;width:220px;font-size:24px;line-height:1.4;text-align:left;color:#1B2024">32×32</p>
+<p style="position:absolute;left:777px;top:327px;width:220px;font-size:24px;line-height:1.4;text-align:left;color:#1B2024">16×16</p>
+<p style="position:absolute;left:777px;top:365px;width:220px;font-size:24px;line-height:1.4;text-align:left;color:#1B2024">5×5 (우리 반 판)</p>
+<p style="position:absolute;left:401px;top:184px;width:220px;font-size:24px;line-height:1.4;text-align:center;color:#B3261E;font-weight:600">판이 커질수록</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:24px">
+<div style="display:flex;flex-direction:column;gap:8px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:20px;padding:24px 28px">
+<h3 style="font-size:32px;font-weight:600">① 더 낮은 밀도에서 멈춰요</h3>
+<p style="font-size:28px;line-height:1.45">절반쯤 고정이 되는 밀도가 5×5는 0.64쯤, 64×64는 0.41쯤이에요.</p>
+</div>
+<div style="display:flex;flex-direction:column;gap:8px;background:#FBE4E1;border:2px solid #B3261E;border-radius:20px;padding:24px 28px">
+<h3 style="font-size:32px;font-weight:600;color:#B3261E">② 갑자기 바뀌어요</h3>
+<p style="font-size:28px;line-height:1.45">64×64는 밀도 0.36에서 거의 안 멈추다가 0.46이면 거의 다 멈춰요. 이렇게 확 달라지는 것이 <b>상전이</b>예요.</p>
+</div>
+</div>
+</div>
+<p style="font-size:24px;color:#4F5860">컴퓨터 실험: 빨강·파랑 반씩 무작위로 놓기, 5×5는 차 수마다 4000번, 16·32칸 판은 밀도마다 400번, 64칸 판은 200번(한 번에 최대 3000라운드)</p>
+<aside>이 슬라이드는 정리용입니다. 먼저 우리 반 막대그래프를 보면서 "판을 키우면 이 그래프는 어떻게 될까?"를 묻고, 교사 화면 '큰 판 실험실' 탭으로 갑니다. 처음에는 5×5 판과 우리 반 막대(자동으로 들어옴), 컴퓨터 5×5 점선이 보입니다. '판 키우기'를 누를 때마다 16×16, 32×32, 64×64 곡선이 하나씩 겹쳐지고 판도 커집니다. 곡선이 왼쪽으로 가면서 가팔라지는 것을 말로 정리하게 한 뒤, 32×32 판을 밀도 0.30과 0.50으로 '실험 1번(보면서)' 한 번씩 보여 줍니다. 0.30에서는 차들이 대각선 줄무늬로 정렬되며 흐르고, 0.50에서는 대각선 띠가 자라며 멈춥니다. 물이 0℃에서 갑자기 얼음이 되는 것처럼 조건이 조금 바뀌었는데 상태가 확 달라지는 것을 상전이라고 소개합니다. 이 급변 구간은 아직 수학자들이 완전히 증명하지 못했습니다.</aside>
+</section>
+<section id="story" data-transition="fade" style="background:#EEF1F0;color:#1B2024;font-family:'IBM Plex Sans KR', Arial, sans-serif;padding:128px 128px 160px;display:flex;flex-direction:column;gap:40px">
+<div style="position:absolute;left:0;bottom:0;width:1920px;height:36px;background:#23292E"></div>
+<div style="position:absolute;left:0;bottom:15px;width:1920px;height:6px;background:repeating-linear-gradient(90deg, #E2A50E 0px, #E2A50E 72px, transparent 72px, transparent 120px)"></div>
+<div style="display:flex;flex-direction:row"><p style="font-size:28px;font-weight:600;background:#E2A50E;color:#2A1E00;padding:6px 22px;border-radius:999px">BML 교통모형 이야기</p></div>
+<h2 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:72px;font-weight:400;line-height:1.15">네 줄 규칙으로 만든 작은 도시</h2>
+<div style="flex:1;display:flex;flex-direction:row;gap:36px;align-items:stretch">
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:40px">
+<div style="display:flex;flex-direction:row"><p style="font-size:26px;font-weight:600;background:#E9E6FA;color:#5A4BC0;padding:4px 18px;border-radius:999px">1992년</p></div>
+<h3 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:46px;font-weight:400;line-height:1.15">세 과학자의 모형</h3>
+<p style="font-size:30px;line-height:1.45">비함, 미들턴, 레빈이 교통 흐름과 정체를 연구하려고 만들었어요. BML은 세 사람 성의 첫 글자예요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:40px">
+<div style="display:flex;flex-direction:row"><p style="font-size:26px;font-weight:600;background:#FBF0CF;color:#7A5600;padding:4px 18px;border-radius:999px">덜어 내기</p></div>
+<h3 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:46px;font-weight:400;line-height:1.15">꼭 필요한 것만</h3>
+<p style="font-size:30px;line-height:1.45">바둑판 도로, 두 방향의 차, 번갈아 오는 차례만 남겼어요. 칸마다 같은 규칙으로 바뀌는 이런 모형을 '세포 자동자'라고 해요.</p>
+</div>
+<div style="flex:1;display:flex;flex-direction:column;gap:16px;background:#FAFBFA;border:2px solid #D3D9DC;border-radius:24px;padding:40px">
+<div style="display:flex;flex-direction:row"><p style="font-size:26px;font-weight:600;background:#FBE4E1;color:#B3261E;padding:4px 18px;border-radius:999px">열린 문제</p></div>
+<h3 style="font-family:'Do Hyeon', Arial, sans-serif;font-size:46px;font-weight:400;line-height:1.15">아직 다 풀지 못했어요</h3>
+<p style="font-size:30px;line-height:1.45">차가 아주 적으면 흐르고 아주 많으면 멈춘다는 건 증명됐지만, 그 사이 갑자기 바뀌는 구간은 아직 수수께끼예요.</p>
+</div>
+</div>
+<p style="font-size:34px;line-height:1.45;font-weight:600">규칙은 단순해도 결과는 복잡할 수 있어요. 세상을 단순하게 줄여 살펴보는 것, 그게 수학 모형이에요.</p>
+<aside>BML 모형은 1992년 Physical Review A에 발표되었고, 차가 한 줄로만 다니는 1차원 세포 자동자 '규칙 184'를 2차원 교차로로 넓힌 모형입니다. 아주 큰 정사각형 판에서는 칸의 약 32%가 찼을 때 흐름에서 정체로 바뀐다고 알려져 있습니다. 밀도가 1에 가까우면 반드시 정체된다는 것(Angel·Holroyd·Martin, 2005)과 N×N 판에서 차가 N/2대보다 적으면 반드시 흐름이 된다는 것(Austin·Benjamini, 2006)은 증명되었고, 2005년 디수자(D'Souza)는 정체와 흐름이 함께 나타나는 중간 상태를 보고했습니다. 활동지 10번을 함께 읽고 마무리 슬라이드로 넘어갑니다.</aside>
+</section>
+<section id="closing" data-transition="fade" style="display:flex; flex-direction:column; gap:40px; padding:128px 128px 160px; background:#23292e">
+  <div style="position:absolute; bottom:80px; left:0; width:1920px; height:12px; display:flex; flex-direction:column; background:repeating-linear-gradient(90deg, #e2a50e 0, #e2a50e 96px, #00000000 96px, #00000000 160px)">
+  </div>
+  <p style="font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:32px; font-weight:600; letter-spacing:2px; color:#e2a50e">마무리</p>
+  <h2 style="font-family:'Do Hyeon', Arial, sans-serif; font-size:88px; font-weight:400; line-height:1.15; color:#f1f4f3">오늘 알게 된 것</h2>
+  <div style="display:flex; flex-direction:column; gap:32px; justify-content:center; flex:1">
+    <div style="display:flex; flex-direction:row; gap:28px; align-items:center">
+      <p style="width:72px; height:72px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; line-height:2; text-align:center; color:#2a1e00; background:#e2a50e; border-radius:256px">1</p>
+      <p style="flex:1; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:40px; line-height:1.45; color:#f1f4f3">어떤 배치든 결국 <b>고정</b> 아니면 <b>반복</b>이다. 같은 모습이 다시 나오면 그때부터 되풀이된다.</p>
+    </div>
+    <div style="display:flex; flex-direction:row; gap:28px; align-items:center">
+      <p style="width:72px; height:72px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; line-height:2; text-align:center; color:#2a1e00; background:#e2a50e; border-radius:256px">2</p>
+      <p style="flex:1; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:40px; line-height:1.45; color:#f1f4f3">한 번의 결과는 미리 알 수 없어도, 많이 실험하면 <b>얼마나 자주</b> 고정이 되는지 알 수 있고, 그걸 알면 더 잘 예상할 수 있다.</p>
+    </div>
+    <div style="display:flex; flex-direction:row; gap:28px; align-items:center">
+      <p style="width:72px; height:72px; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:36px; font-weight:600; line-height:2; text-align:center; color:#2a1e00; background:#e2a50e; border-radius:256px">3</p>
+      <p style="flex:1; font-family:'IBM Plex Sans KR', Arial, sans-serif; font-size:40px; line-height:1.45; color:#f1f4f3">아무렇게나 놓으면 차가 많을수록 고정이 많아지고, 판이 클수록 그 변화가 갑자기 일어난다.<br>규칙은 네 줄뿐인데 수학자들도 아직 다 풀지 못했다.</p>
+    </div>
+  </div>
+  <aside>학생 두세 명에게 가장 기억에 남는 것을 말로 들어 봅니다. "규칙은 네 줄뿐인데 결과를 미리 알기 어려운 까닭은?"을 물어도 좋습니다. 첫 시간의 질문(신호등 없는 교차로에 차가 많아지면?)으로 돌아가 답을 정리하고 마칩니다.</aside>
+</section>
+</div>
+</div>
+<div id="notes" hidden><h2>발표자 메모</h2><div id="notesText"></div></div>
+<nav class="controls" aria-label="슬라이드 조작">
+  <button type="button" id="btnPrev" aria-label="이전 장">◀</button>
+  <span class="count" id="count">1 / 21</span>
+  <button type="button" id="btnNext" aria-label="다음 장">▶</button>
+  <select id="jump" aria-label="장으로 바로 가기"></select>
+  <button type="button" id="btnRestart" title="판 움직임 처음부터 (R)">다시 움직이기</button>
+  <button type="button" id="btnNotes" aria-pressed="false" title="발표자 메모 (N)">메모</button>
+  <button type="button" id="btnFull" title="전체 화면 (F)">전체 화면</button>
+</nav>
+<script type="module" src="js/slides.js"></script>
+</body>
+</html>

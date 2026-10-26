@@ -1,0 +1,41 @@
+/* 수업 슬라이드: 1920×1080 무대를 화면에 맞춰 키움 */
+html, body { margin: 0; height: 100%; background: #111416; overflow: hidden; }
+body { font-family: 'IBM Plex Sans KR', 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; }
+#viewport { position: fixed; inset: 0; cursor: pointer; }
+#stage { position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; transform-origin: center center; color: #1B2024; font-family: 'IBM Plex Sans KR', Arial, sans-serif; }
+#stage * { margin: 0; box-sizing: border-box; }
+#stage > section { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: hidden; opacity: 0; visibility: hidden; transition: opacity .35s ease, visibility 0s linear .35s; }
+#stage > section.active { opacity: 1; visibility: visible; transition: opacity .35s ease; }
+#stage aside { display: none; }
+#stage b { font-weight: 700; }
+#stage .arrow-r { flex: none; clip-path: polygon(0 30%, 62% 30%, 62% 0, 100% 50%, 62% 100%, 62% 70%, 0 70%); }
+#stage .ic { display: inline-flex; flex: none; }
+#stage .ic svg { width: 100%; height: 100%; }
+#stage .bb { flex: none; display: block; }
+#stage .bb svg { display: block; }
+
+/* 진행 막대 */
+#progress { position: fixed; left: 0; top: 0; height: 4px; background: #E2A50E; transition: width .3s ease; z-index: 3; }
+
+/* 조작 막대 */
+.controls { position: fixed; right: 16px; bottom: 16px; z-index: 4; display: flex; align-items: center; gap: 6px; padding: 6px; border-radius: 12px; background: rgba(35, 41, 46, .92); color: #F1F4F3; font-size: 14px; transition: opacity .3s ease; box-shadow: 0 4px 18px rgba(0, 0, 0, .25); }
+body.idle .controls { opacity: 0; }
+body.idle #viewport { cursor: none; }
+.controls button, .controls select { font: inherit; color: inherit; background: transparent; border: 1px solid #4A545B; border-radius: 8px; height: 36px; padding: 0 12px; cursor: pointer; }
+.controls button:hover, .controls select:hover { background: #2E363C; }
+.controls button[aria-pressed="true"] { background: #E2A50E; border-color: #E2A50E; color: #2A1E00; }
+.controls select { max-width: 280px; padding-right: 8px; }
+.controls select option { color: #1B2024; background: #FFFFFF; }
+.controls .count { min-width: 64px; text-align: center; font-variant-numeric: tabular-nums; }
+.controls :focus-visible { outline: 2px solid #E2A50E; outline-offset: 2px; }
+
+/* 발표자 메모 */
+#notes { position: fixed; left: 16px; right: 16px; bottom: 68px; z-index: 4; max-height: 38vh; overflow: auto; padding: 16px 20px; border-radius: 12px; background: rgba(250, 251, 250, .97); color: #1B2024; font-size: 17px; line-height: 1.65; box-shadow: 0 6px 24px rgba(0, 0, 0, .3); cursor: auto; }
+#notes h2 { margin: 0 0 6px; font-size: 13px; letter-spacing: .04em; color: #5B646B; }
+#notes .muted { color: #5B646B; }
+
+@media (max-width: 700px) {
+  .controls { left: 8px; right: 8px; bottom: 8px; justify-content: center; flex-wrap: wrap; }
+  .controls select { max-width: 160px; }
+  #notes { bottom: 104px; }
+}
