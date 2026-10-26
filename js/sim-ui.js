@@ -178,9 +178,13 @@ export class Simulator {
     if (this.half === 0 && this.rounds.length > this.opts.maxRounds) return false;
     this.undoStack.push({ cur: Int8Array.from(this.cur), half: this.half, pendingMr: this.pendingMr, len: this.rounds.length, verdict: this.verdict, arrived: new Set(this.arrived) });
     const color = this.half === 0 ? RED : BLUE;
-    const moves = [];
-    for (let i = 0; i < this.cur.length; i++) if (willMove(this.cur, this.L, i, color)) moves.push({ from: i, to: target(i, this.L, color) });
-    this.lastMove = { color, moves };
+    const moves = [], blocked = [];
+    for (let i = 0; i < this.cur.length; i++) {
+      if (this.cur[i] !== color) continue;
+      if (willMove(this.cur, this.L, i, color)) moves.push({ from: i, to: target(i, this.L, color) });
+      else blocked.push(i);
+    }
+    this.lastMove = { color, moves, blocked };
     const next = new Int8Array(this.cur.length);
     const m = halfStep(this.cur, next, this.L, color);
     this.arrived = new Set();
@@ -217,7 +221,7 @@ export class Simulator {
   }
   animateLast(dur) {
     const mv = this.lastMove;
-    if (!this.motion || !mv || !mv.moves.length || typeof Element.prototype.animate !== "function") return;
+    if (!this.motion || !mv || !(mv.moves.length || mv.blocked.length) || typeof Element.prototype.animate !== "function") return;
     const L = this.L, red = mv.color === RED;
     const a = this.cells[0].getBoundingClientRect();
     const stepX = L > 1 ? this.cells[1].getBoundingClientRect().left - a.left : a.width;
@@ -238,6 +242,20 @@ export class Simulator {
         const an = ghost.animate([{ transform: "none" }, { transform: out }], opts);
         an.onfinish = () => ghost.remove();
       }
+    }
+    // 앞이 막힌 차: 앞으로 가려다 막혀서 제자리로 돌아오는 모습
+    const d = (red ? stepX : stepY) * 0.16;
+    const ax = red ? "translateX" : "translateY";
+    for (const i of mv.blocked) {
+      const car = this.cells[i].querySelector("svg");
+      if (!car) continue;
+      car.animate([
+        { transform: "none", offset: 0, easing: "cubic-bezier(.5,0,.9,.6)" },
+        { transform: `${ax}(${d}px)`, offset: 0.38, easing: "ease-out" },
+        { transform: `${ax}(${-d * 0.3}px)`, offset: 0.62, easing: "ease-in-out" },
+        { transform: `${ax}(${d * 0.12}px)`, offset: 0.82 },
+        { transform: "none", offset: 1 }
+      ], { duration: dur });
     }
   }
 
