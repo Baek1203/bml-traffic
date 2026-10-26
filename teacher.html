@@ -90,7 +90,7 @@
         <span class="meta" id="densMeta"></span>
       </div>
     </div>
-    <p class="note">학생은 '② 무작위 실험'에서 앱이 정해 준 차 수(10~22대)만큼 빨간 차와 파란 차를 같은 수로 아무렇게나 놓고, 고정일지 반복일지 예상한 뒤 판정해요. 결과는 자동으로 여기에 모여요. 차 수는 학번에 따라 엇갈려 돌아가서 차 수마다 실험 횟수가 고르게 쌓여요. 5×5 도전 제출은 들어가지 않아요. 위에서 고른 반만 보거나 모든 반을 함께 볼 수 있어요.</p>
+    <p class="note">학생은 '② 무작위 실험'에서 앱이 정해 준 차 수(10~22대)만큼 빨간 차와 파란 차를 같은 수로 아무렇게나 놓고, 고정일지 반복일지 예상한 뒤 판정해요. 예상이 맞으면 1점이고, 결과는 자동으로 여기에 모여요. 차 수는 학생마다 일곱 가지를 한 바퀴에 한 번씩, 순서를 섞어서 주므로 한 사람도 반 전체도 차 수가 고르게 쌓여요. 5×5 도전 제출은 들어가지 않아요. 위에서 고른 반만 보거나 모든 반을 함께 볼 수 있어요.</p>
     <div class="two-col">
       <div class="tbl-wrap">
         <table>
@@ -105,6 +105,19 @@
         </div>
         <svg id="densChart" class="chart" viewBox="0 0 560 320" role="img" aria-label="차 수에 따른 고정의 상대도수 막대그래프"></svg>
       </div>
+    </div>
+    <div class="panel rank-panel">
+      <div class="btn-row" style="justify-content:space-between">
+        <h3>예상왕 <span class="meta">예상을 맞힌 수가 점수예요 · 같으면 적중률 순</span></h3>
+        <label class="toggle"><input type="checkbox" id="rankSids"> 학번 보이기</label>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>순위</th><th class="left">학생</th><th>점수</th><th>실험</th><th>적중률</th></tr></thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+      <p class="note">'예상 적중' 열에서 어느 차 수의 예상이 가장 어려웠는지 함께 보면 좋아요. 반반쯤 고정이 되는 16대 근처가 가장 맞히기 어려워요.</p>
     </div>
   </section>
 

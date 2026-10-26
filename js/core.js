@@ -128,5 +128,60 @@ export const PRESETS = {
   5: []
 };
 
+/* ---------- 무작위 실험 ---------- */
+export const RAND_COUNTS = [10, 12, 14, 16, 18, 20, 22];
+// 학생의 예상은 따로 칸이 없어서 densityCars에 함께 적음 (데이터베이스 규칙을 바꾸지 않으려고)
+//   100 + 차 수 = '고정' 예상, 200 + 차 수 = '반복' 예상, 차 수만 = 예상 없음
+export function encodeGuess(n, guess) { return (guess === "fixed" ? 100 : guess === "repeat" ? 200 : 0) + n; }
+export function decodeGuess(s) {
+  const d = s && s.densityCars;
+  if (typeof d !== "number") return null;
+  return d >= 200 ? "repeat" : d >= 100 ? "fixed" : null;
+}
+export function isHit(guess, result) { return guess ? (guess === "fixed") === (result === "fixed") : null; }
+// 예상 점수: 맞힌 수, 예상한 수, 끝에서부터 연속으로 맞힌 수 (trials는 시간 순서)
+export function guessScore(trials, getGuess = decodeGuess) {
+  let hits = 0, known = 0, streak = 0;
+  for (const s of trials) {
+    const g = getGuess(s);
+    if (!g) { streak = 0; continue; }
+    known++;
+    if (isHit(g, s.result)) { hits++; streak++; } else streak = 0;
+  }
+  return { hits, known, streak };
+}
+// 학생마다 차 수 7가지를 한 바퀴에 한 번씩, 바퀴마다 순서를 섞어서 (학번으로 정해지는 순서라 새로고침해도 같음)
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function mix(h) {
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  h = Math.imul(h ^ (h >>> 16), 0x45d9f3b);
+  return (h ^ (h >>> 16)) >>> 0;
+}
+function cycleOrder(seed, c) {
+  const rnd = mulberry32(mix(mix(seed) + Math.imul(c + 1, 0x9E3779B9)));
+  rnd();
+  const arr = RAND_COUNTS.slice();
+  for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+  return arr;
+}
+export function randCycle(sid, c) {
+  const seed = parseInt(sid, 10) || 0;
+  const order = cycleOrder(seed, c);
+  // 바퀴가 바뀔 때 같은 차 수가 두 번 연달아 나오지 않게
+  if (c > 0 && order[0] === cycleOrder(seed, c - 1)[RAND_COUNTS.length - 1]) [order[0], order[1]] = [order[1], order[0]];
+  return order;
+}
+export function randCountAt(sid, k) {
+  const L = RAND_COUNTS.length;
+  return randCycle(sid, Math.floor(k / L))[k % L];
+}
+
 // 5×5 무작위 배치(빨강·파랑 같은 수)에서 고정되는 비율 — 차 수별로 4000번씩 미리 돌린 값
 export const RANDOM_FIXED_5x5 = { 2: 0, 4: 0, 6: 0, 8: 0, 10: 0, 12: 0.003, 14: 0.105, 16: 0.488, 18: 0.867, 20: 0.979, 22: 0.994, 24: 1 };

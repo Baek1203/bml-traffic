@@ -319,3 +319,32 @@ tr.total td { font-weight: 600; border-top: 2px solid var(--line); }
 @media (max-width: 900px) { .rules-strip.lab-steps { grid-template-columns: minmax(0, 1fr); } }
 .lab-side { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
 .results.single { grid-template-columns: minmax(0, 1fr); }
+
+/* 무작위 실험: 예상 점수와 한 바퀴 */
+.score-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.score-big { display: flex; align-items: baseline; gap: 6px; }
+.score-big span { font-size: 14px; color: var(--muted); margin-right: 4px; }
+.score-big b { font-family: var(--f-display); font-weight: 400; font-size: 56px; line-height: 1; color: var(--ink); display: inline-block; }
+.score-big small { font-size: 16px; color: var(--muted); }
+.score-big b.bump { animation: bump 0.6s ease-out; color: var(--flow); }
+@keyframes bump { 0% { transform: scale(1); } 30% { transform: scale(1.35); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) { .score-big b.bump { animation: none; } }
+.score-side { display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+.score-side p { margin: 0; }
+.score-side p:first-child { font-weight: 600; }
+.score-side p:last-child { color: var(--muted); }
+.cycle { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 6px; }
+.cchip { position: relative; display: flex; align-items: baseline; justify-content: center; gap: 1px; border: 1.5px dashed var(--line); border-radius: 9px; padding: 8px 0 6px; font-family: var(--f-mono); font-size: 15px; color: var(--muted); }
+.cchip small { font-family: var(--f-body); font-size: 10px; }
+.cchip i { position: absolute; top: -8px; right: -4px; font-style: normal; font-size: 13px; font-weight: 700; background: var(--surface); border-radius: 50%; width: 18px; height: 18px; line-height: 18px; text-align: center; }
+.cchip.now { border-style: solid; border-color: var(--ink); color: var(--ink); font-weight: 600; }
+.cchip.done { border-style: solid; border-color: var(--line); background: var(--bg); color: var(--ink); }
+.cchip.done i { color: var(--jam); }
+.cchip.done.hit { border-color: var(--flow); background: var(--flow-soft); }
+.cchip.done.hit i { color: var(--flow); }
+.hit { color: var(--flow); }
+.miss { color: var(--jam); }
+.streak { color: var(--lane-ink); background: var(--lane-soft); border-radius: 999px; padding: 1px 8px; }
+.rank-panel { margin-top: 16px; }
+.rank-panel h3 .meta { font-weight: 400; margin-left: 6px; }
+.rank-panel tr.rank1 td { background: var(--lane-soft); font-weight: 600; }

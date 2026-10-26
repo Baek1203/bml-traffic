@@ -1,6 +1,7 @@
 // Firestore 읽기·쓰기를 한곳에 모음
 //   config/main        : { classes: [반 이름], density: { on: 무작위 실험 열림, cars: 쓰지 않음 }, resetAt: { 반: 밀리초 }, updatedAt }
 //   submissions/{자동} : { cls, sid, mode, size, board, nr, nb, n, result, start, period, densityCars, createdAt, hidden }
+//     mode "density" = 무작위 실험, densityCars = 100+차 수(고정 예상) 또는 200+차 수(반복 예상)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getFirestore, doc, collection, onSnapshot, setDoc, addDoc, updateDoc,

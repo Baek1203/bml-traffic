@@ -1,6 +1,6 @@
 // 학생 화면 — 첫 화면에서 반과 학번으로 들어가 ① 5×5 기록 도전(배치 만들기, 판정, 제출)
 //              ② 무작위 실험(앱이 정한 차 수로 무작위 배치 → 예상 → 판정, 결과는 반 전체 상대도수 그래프로)
-import { parse, serialize, classify, playRound, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT } from "./core.js";
+import { parse, serialize, classify, playRound, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT, RAND_COUNTS, encodeGuess, decodeGuess, isHit, guessScore, randCountAt } from "./core.js";
 import { Simulator, miniBoard, carSvg } from "./sim-ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -19,8 +19,7 @@ const ch = {
   store: null, failed: false, unsubSubs: null, connected: false, sending: false,
   tab: ls.get("bml-tab", "challenge") === "random" ? "random" : "challenge"
 };
-// 차 수는 학번에 따라 순서를 엇갈려 돌아가며 정함 → 반 전체로 보면 차 수마다 실험 횟수가 고르게 쌓임
-const RAND_COUNTS = [10, 12, 14, 16, 18, 20, 22];
+// 차 수는 학생마다 7가지(10~22대)를 한 바퀴에 한 번씩, 바퀴마다 순서를 섞어서 정함 → 한 사람도, 반 전체도 고르게
 const COLS = "가나다라마";
 const rx = { phase: "ready", cars: 0, board: null, frames: null, fi: 0, result: null, guess: null, timer: null, pending: null, msg: "", msgBad: false, local: [] };
 const randCells = [];
@@ -245,10 +244,17 @@ async function connect() {
 function guessKey() { return ch.me ? `bml-rand-g-${ch.me.cls}-${ch.me.sid}` : "bml-rand-g-practice"; }
 function guesses() { return ls.get(guessKey(), {}); }
 function randTrials() { return ch.practice ? rx.local : myRandomSubs(); }
-function nextCars() {
-  const k = randTrials().length;
-  const base = ch.me ? parseInt(ch.me.sid, 10) % RAND_COUNTS.length : 0;
-  return RAND_COUNTS[(base + k) % RAND_COUNTS.length];
+function nextCars() { return randCountAt(ch.me ? ch.me.sid : "0", randTrials().length); }
+// 예상: 서버에 함께 저장된 값, 없으면 이 기기에 남은 값
+function guessOf(s, gs) { return s.guess || decodeGuess(s) || (gs || guesses())[s.board] || null; }
+// 우리 반 예상 점수 최고
+function classTopScore() {
+  if (ch.practice || !ch.me) return null;
+  const by = new Map();
+  visibleSubs().filter((s) => s.mode === "density").forEach((s) => { if (!by.has(s.sid)) by.set(s.sid, []); by.get(s.sid).push(s); });
+  let top = 0;
+  for (const list of by.values()) top = Math.max(top, guessScore(list).hits);
+  return top;
 }
 function randomBoard(n) {
   const idx = Array.from({ length: 25 }, (_, i) => i);
@@ -259,7 +265,7 @@ function randomBoard(n) {
 }
 function randReset() {
   if (rx.timer) { clearInterval(rx.timer); rx.timer = null; }
-  Object.assign(rx, { phase: "ready", cars: 0, board: null, frames: null, fi: 0, result: null, guess: null, pending: null, msg: "", msgBad: false });
+  Object.assign(rx, { phase: "ready", cars: 0, board: null, boardStr: null, frames: null, fi: 0, result: null, guess: null, pending: null, msg: "", msgBad: false });
 }
 function randFinishNow() {
   if (rx.timer) { clearInterval(rx.timer); rx.timer = null; }
@@ -268,6 +274,7 @@ function randFinishNow() {
 function randPlace() {
   rx.cars = nextCars();
   rx.board = randomBoard(rx.cars);
+  rx.boardStr = serialize(rx.board);
   rx.phase = "placed"; rx.msg = "";
   renderRandom();
 }
@@ -295,7 +302,7 @@ function randGuess(g) {
   rx.frames = frames; rx.fi = 0;
   const board = serialize(rx.board);
   const gs = guesses(); gs[board] = g; ls.set(guessKey(), gs);
-  rx.pending = { cls: ch.me ? ch.me.cls : "", sid: ch.me ? ch.me.sid : "", mode: "density", board, nr: c.nr, nb: c.nb, n: c.n, result: c.type, start: c.start, period: c.period, densityCars: c.n };
+  rx.pending = { cls: ch.me ? ch.me.cls : "", sid: ch.me ? ch.me.sid : "", mode: "density", board, nr: c.nr, nb: c.nb, n: c.n, result: c.type, start: c.start, period: c.period, densityCars: encodeGuess(c.n, g) };
   randSend();
   rx.phase = "running";
   const stride = Math.max(1, Math.ceil((frames.length - 1) / 24));
@@ -311,9 +318,10 @@ function randNext() { randReset(); renderRandom(); }
 function btn(label, cls, fn) { const b = document.createElement("button"); b.type = "button"; b.className = "btn " + cls; b.textContent = label; b.addEventListener("click", fn); return b; }
 function renderRandom() {
   if ($("randOpen").hidden) return;
-  const trials = randTrials();
+  // 돌려 보는 동안에는 이번 실험의 결과(점수·기록)를 아직 보여 주지 않음
+  const trials = rx.phase === "running" && rx.boardStr ? randTrials().filter((s) => s.board !== rx.boardStr) : randTrials();
   const cars = rx.phase === "ready" ? nextCars() : rx.cars;
-  const no = trials.length + (rx.phase === "ready" || rx.pending || rx.phase === "placed" ? 1 : 0);
+  const no = trials.length + (rx.phase === "done" && trials.some((x) => x.board === rx.boardStr) ? 0 : 1);
   $("randNo").textContent = `실험 ${Math.max(1, no)}`;
   $("randCars").innerHTML = `차 <b>${cars}대</b> <span class="meta">빨강 ${cars / 2} · 파랑 ${cars / 2} · 25칸 중 ${cars}칸 (밀도 ${(cars / 25).toFixed(2)})</span>`;
   // 판
@@ -336,8 +344,10 @@ function renderRandom() {
       act.append(btn("바로 결과 보기", "", () => { randFinishNow(); renderRandom(); }));
     } else {
       const repeat = c.type !== "fixed";
-      const hit = (rx.guess === "fixed") === !repeat;
-      st.innerHTML = `<span class="tag ${c.type}">${repeat ? "반복" : "고정"}</span> ${c.rounds}라운드에 판정 · 예상은 ${rx.guess === "fixed" ? "고정" : "반복"} → <b>${hit ? "맞았어요!" : "달랐어요"}</b>`;
+      const hit = isHit(rx.guess, c.type);
+      const sc = guessScore(trials, (s) => guessOf(s));
+      st.innerHTML = `<span class="tag ${c.type}">${repeat ? "반복" : "고정"}</span> ${c.rounds}라운드에 판정 · 예상은 ${rx.guess === "fixed" ? "고정" : "반복"} → ` +
+        (hit ? `<b class="hit">맞았어요! +1점</b>${sc.streak >= 2 ? ` <b class="streak">${sc.streak}연속!</b>` : ""}` : `<b class="miss">아쉬워요, 이번엔 달랐어요</b>`);
       if (rx.pending && !ch.practice) act.append(btn("다시 보내기", "", randSend));
       act.append(btn("다음 실험", "primary", randNext));
     }
@@ -345,16 +355,38 @@ function renderRandom() {
   if (rx.msg) { const m = document.createElement("p"); m.className = "status-line" + (rx.msgBad ? " bad" : ""); m.textContent = rx.msg; act.append(m); }
   // 내 실험
   const gs = guesses();
-  let hits = 0, known = 0;
   const rows = trials.map((s, k) => {
-    const gu = ch.practice ? s.guess : gs[s.board];
+    const gu = guessOf(s, gs);
     const rep = s.result !== "fixed";
-    let mark = "";
-    if (gu) { known++; const ok = (gu === "fixed") === !rep; if (ok) hits++; mark = ok ? "○" : "×"; }
-    return `<tr><td>${k + 1}</td><td class="mono">${s.n}대</td><td>${gu ? (gu === "fixed" ? "고정" : "반복") : "–"}</td><td><span class="tag ${s.result}">${rep ? "반복" : "고정"}</span></td><td>${mark}</td></tr>`;
+    const ok = isHit(gu, s.result);
+    return `<tr><td>${k + 1}</td><td class="mono">${s.n}대</td><td>${gu ? (gu === "fixed" ? "고정" : "반복") : "–"}</td><td><span class="tag ${s.result}">${rep ? "반복" : "고정"}</span></td><td>${ok === null ? "" : ok ? '<b class="hit">○</b>' : '<span class="miss">×</span>'}</td></tr>`;
   });
   $("randBody").innerHTML = rows.length ? rows.reverse().join("") : '<tr><td colspan="5" class="empty" style="text-align:center">아직 실험하지 않았어요.</td></tr>';
-  $("randCount").textContent = trials.length ? `모두 ${trials.length}번${known ? ` · 예상 적중 ${hits}/${known}` : ""}` : "";
+  const sc = guessScore(trials, (s) => guessOf(s, gs));
+  $("randCount").textContent = trials.length ? `모두 ${trials.length}번 · 예상 적중 ${sc.hits}/${sc.known}` : "";
+  // 점수
+  const scoreEl = $("myScore");
+  if (scoreEl.textContent !== String(sc.hits)) {
+    const up = +scoreEl.textContent < sc.hits && rx.phase === "done";
+    scoreEl.textContent = sc.hits;
+    if (up) { scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); }
+  }
+  $("myStreak").textContent = sc.streak >= 2 ? `${sc.streak}번 연속으로 맞히는 중` : sc.known ? `${sc.known}번 중 ${sc.hits}번 맞힘` : "예상이 맞으면 1점";
+  const top = classTopScore();
+  $("classTop").textContent = top === null ? "" : `우리 반 최고 ${top}점`;
+  // 한 바퀴: 7가지 차 수를 한 번씩
+  const L = RAND_COUNTS.length, k = trials.length - (rx.phase === "done" && trials.some((x) => x.board === rx.boardStr) ? 1 : 0);
+  const c = Math.floor(Math.max(0, k) / L);
+  const inCycle = trials.slice(c * L);
+  const cur = rx.phase === "done" ? null : cars;
+  $("cycleChips").innerHTML = RAND_COUNTS.map((n) => {
+    const s = inCycle.find((x) => x.n === n);
+    const ok = s ? isHit(guessOf(s, gs), s.result) : null;
+    const cls = s ? (ok ? "done hit" : "done") : n === cur ? "now" : "";
+    return `<span class="cchip ${cls}" title="${n}대">${n}<small>대</small>${s ? `<i>${ok ? "○" : ok === false ? "×" : ""}</i>` : ""}</span>`;
+  }).join("");
+  const doneN = inCycle.length;
+  $("cycleNote").textContent = `${c + 1}바퀴째 · ${doneN}/${L} ` + (doneN >= L ? "· 한 바퀴 완성! 다음 실험부터 새 바퀴예요." : "· 일곱 가지 차 수를 한 번씩 하면 한 바퀴예요.");
 }
 
 /* ---------- 시작 ---------- */

@@ -1,5 +1,5 @@
 // 교사 대시보드 — 반 목록, 실시간 기록판, 다시 보기, 무작위 실험(상대도수), 학생별 기록, 제출 모아 보기
-import { parse, classify, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT, RANDOM_FIXED_5x5 } from "./core.js";
+import { parse, classify, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT, RANDOM_FIXED_5x5, RAND_COUNTS, decodeGuess, isHit, guessScore } from "./core.js";
 import { Simulator, miniBoard } from "./sim-ui.js";
 import { attachZoom } from "./zoom.js";
 import { publishRandom } from "./shared.js";
@@ -16,7 +16,7 @@ const T = {
   store: null, config: null, subs: [], unsub: null,
   cls: ls.get("bml-t-cls", ALL),
   showBoards: false, showSids: false, showOld: false,
-  filter: "all", sid: null, selected: null, cmp: false,
+  filter: "all", sid: null, selected: null, cmp: false, rankSids: false,
   verifyCache: new Map()
 };
 
@@ -178,13 +178,13 @@ $("btnHide").addEventListener("click", async () => {
 
 /* ---------- 무작위 실험 ---------- */
 // 학생이 '② 무작위 실험'에서 앱이 정한 차 수로 아무렇게나 놓고 판정한 결과 → 차 수별 고정의 상대도수
-const RAND_COUNTS = [10, 12, 14, 16, 18, 20, 22];
 attachZoom($("densZoom"), $("densChart"), "무작위 실험 · 고정의 상대도수");
 $("randOn").addEventListener("change", (e) => {
   if (!T.config) { e.target.checked = false; return; }
   saveCfg({ density: { on: e.target.checked, cars: (T.config.density && T.config.density.cars) || 16 } });
 });
 $("densCmp").addEventListener("change", (e) => { T.cmp = e.target.checked; renderDensity(); });
+$("rankSids").addEventListener("change", (e) => { T.rankSids = e.target.checked; renderDensity(); });
 
 function renderDensity() {
   const on = !!(T.config && T.config.density && T.config.density.on);
@@ -195,15 +195,23 @@ function renderDensity() {
   const label = T.cls === ALL ? "모든 반" : T.cls;
   $("densMeta").textContent = subs.length ? `${label} · 실험 ${subs.length}번 · 학생 ${people}명` : `${label} · 아직 실험 없음`;
   const by = {};
-  RAND_COUNTS.forEach((n) => { by[n] = { n: 0, fixed: 0 }; });
-  subs.forEach((s) => { (by[s.n] = by[s.n] || { n: 0, fixed: 0 }); by[s.n].n++; if (s.result === "fixed") by[s.n].fixed++; });
+  RAND_COUNTS.forEach((n) => { by[n] = { n: 0, fixed: 0, known: 0, hit: 0 }; });
+  subs.forEach((s) => {
+    const d = (by[s.n] = by[s.n] || { n: 0, fixed: 0, known: 0, hit: 0 });
+    d.n++; if (s.result === "fixed") d.fixed++;
+    const h = isHit(decodeGuess(s), s.result);
+    if (h !== null) { d.known++; if (h) d.hit++; }
+  });
   publishRandom({ label, by, total: subs.length });
   const rows = Object.keys(by).map(Number).sort((a, b) => a - b);
-  $("densHead").innerHTML = `<tr><th>차 수</th><th>밀도</th><th>실험</th><th>고정</th><th>반복</th><th>고정의 상대도수</th>${T.cmp ? "<th>컴퓨터 4000번</th>" : ""}</tr>`;
+  $("densHead").innerHTML = `<tr><th>차 수</th><th>밀도</th><th>실험</th><th>고정</th><th>반복</th><th>고정의 상대도수</th>${T.cmp ? "<th>컴퓨터 4000번</th>" : ""}<th>예상 적중</th></tr>`;
+  const acc = (d) => d.known ? `${d.hit}/${d.known}` : "–";
+  const tot = rows.reduce((a, n) => ({ known: a.known + by[n].known, hit: a.hit + by[n].hit }), { known: 0, hit: 0 });
   $("densBody").innerHTML = rows.map((n) => {
     const r = by[n], rnd = RANDOM_FIXED_5x5[n];
-    return `<tr><td>${n}대</td><td class="mono">${(n / 25).toFixed(2)}</td><td class="mono">${r.n}</td><td class="mono">${r.fixed}</td><td class="mono">${r.n - r.fixed}</td><td class="mono">${r.n ? (r.fixed / r.n).toFixed(2) : "–"}</td>${T.cmp ? `<td class="mono">${rnd === undefined ? "–" : rnd.toFixed(2)}</td>` : ""}</tr>`;
-  }).join("") + `<tr class="total"><td>합계</td><td></td><td class="mono">${subs.length}</td><td class="mono">${subs.filter((s) => s.result === "fixed").length}</td><td class="mono">${subs.filter((s) => s.result !== "fixed").length}</td><td></td>${T.cmp ? "<td></td>" : ""}</tr>`;
+    return `<tr><td>${n}대</td><td class="mono">${(n / 25).toFixed(2)}</td><td class="mono">${r.n}</td><td class="mono">${r.fixed}</td><td class="mono">${r.n - r.fixed}</td><td class="mono">${r.n ? (r.fixed / r.n).toFixed(2) : "–"}</td>${T.cmp ? `<td class="mono">${rnd === undefined ? "–" : rnd.toFixed(2)}</td>` : ""}<td class="mono">${acc(r)}</td></tr>`;
+  }).join("") + `<tr class="total"><td>합계</td><td></td><td class="mono">${subs.length}</td><td class="mono">${subs.filter((s) => s.result === "fixed").length}</td><td class="mono">${subs.filter((s) => s.result !== "fixed").length}</td><td></td>${T.cmp ? "<td></td>" : ""}<td class="mono">${acc(tot)}</td></tr>`;
+  renderRanking(subs);
 
   // 막대그래프: 차 수마다 고정의 상대도수 (고정 횟수 ÷ 실험 횟수)
   const svg = $("densChart"), NS = "http://www.w3.org/2000/svg";
@@ -243,6 +251,25 @@ function renderDensity() {
     pts.forEach((n) => svg.append(el("circle", { cx: X(rows.indexOf(n)), cy: Y(RANDOM_FIXED_5x5[n]), r: 4, fill: "var(--surface)", stroke: "var(--jam)", "stroke-width": 2 })));
   }
   if (!subs.length) svg.append(el("text", { x: (l + W - r) / 2, y: (t + H - b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--muted)" }, on ? "학생들이 실험하면 막대가 쌓여요" : "위의 '무작위 실험 열기'를 켜면 학생 화면에서 시작할 수 있어요"));
+}
+
+// 예상왕: 예상을 맞힌 수(점수)가 많은 순, 같으면 적중률이 높은 순
+function renderRanking(subs) {
+  const by = new Map();
+  subs.forEach((s) => { const k = s.cls + "|" + s.sid; if (!by.has(k)) by.set(k, []); by.get(k).push(s); });
+  const list = [...by.entries()].map(([k, l]) => {
+    const sc = guessScore(l.slice().sort((a, b) => a.createdAt - b.createdAt));
+    return { k, sid: k.split("|")[1], cls: k.split("|")[0], n: l.length, ...sc };
+  }).filter((x) => x.known > 0).sort((a, b) => b.hits - a.hits || b.hits / b.known - a.hits / a.known || a.n - b.n);
+  const box = $("rankBody");
+  if (!list.length) { box.innerHTML = '<tr><td colspan="5" class="empty" style="text-align:center">아직 예상 기록이 없어요.</td></tr>'; return; }
+  let rank = 0, prev = null;
+  box.innerHTML = list.slice(0, 10).map((x, i) => {
+    if (!prev || prev.hits !== x.hits || prev.known !== x.known) rank = i + 1;
+    prev = x;
+    const who = T.rankSids ? `${esc(x.sid)}${T.cls === ALL ? ` <span class="meta">${esc(x.cls)}</span>` : ""}` : '<span class="meta">학번 가림</span>';
+    return `<tr${rank === 1 ? ' class="rank1"' : ""}><td>${rank}위</td><td class="left">${who}</td><td class="mono"><b>${x.hits}</b>점</td><td class="mono">${x.n}번</td><td class="mono">${Math.round(x.hits / x.known * 100)}%</td></tr>`;
+  }).join("");
 }
 
 /* ---------- 학생별 기록 ---------- */
@@ -322,7 +349,7 @@ $("btnCsv").addEventListener("click", () => {
   const lines = [head.join("\t")].concat(scopeSubs().map((s) => {
     const rows = s.board.match(/.{5}/g).join(" ");
     const ids = challengeIds(s).map((id) => CHALLENGES.find((c) => c.id === id).short).join(", ");
-    return [s.cls, s.sid, new Date(s.createdAt).toLocaleString("ko-KR"), isRandom(s) ? "무작위 실험" : "도전", rows, s.nr, s.nb, s.n, RESULT_TEXT[s.result] || s.result, s.start, s.period, ids, verify(s) ? "예" : "아니오", s.hidden ? "예" : ""].join("\t");
+    return [s.cls, s.sid, new Date(s.createdAt).toLocaleString("ko-KR"), isRandom(s) ? "무작위 실험" + ({ fixed: " (예상 고정)", repeat: " (예상 반복)" }[decodeGuess(s)] || "") : "도전", rows, s.nr, s.nb, s.n, RESULT_TEXT[s.result] || s.result, s.start, s.period, ids, verify(s) ? "예" : "아니오", s.hidden ? "예" : ""].join("\t");
   }));
   const text = lines.join("\n");
   const msg = $("csvMsg"), fb = $("csvFallback");
