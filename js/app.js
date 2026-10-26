@@ -1,7 +1,7 @@
 // 학생 화면 — 첫 화면에서 반과 학번으로 들어가 무작위 실험
 //   앱이 정한 차 수로 무작위 배치 → 고정·반복 예상 → 판정, 결과는 반 전체 그래프로 모임
-//   1판: 감으로 예상, 2판(교사가 '2판 시작'을 누른 뒤): 1판 우리 반 결과를 보고 예상
-import { serialize, classify, playRound, RAND_COUNTS, encodeGuess, decodeGuess, isHit, guessScore, randCountAt, round2Time, roundOf } from "./core.js";
+//   예상이 맞으면 1점, 실험이 쌓이면 교사 화면의 우리 반 그래프가 점점 또렷해짐
+import { serialize, classify, playRound, RAND_COUNTS, encodeGuess, decodeGuess, isHit, guessScore, randCountAt } from "./core.js";
 import { carSvg } from "./sim-ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -54,9 +54,6 @@ function visibleSubs() {
   return ch.subsAll.filter((s) => !s.hidden && s.createdAt >= since && s.mode === "density");
 }
 function myRandomSubs() { return ch.me ? visibleSubs().filter((s) => s.sid === ch.me.sid) : []; }
-function round2() { return ch.me && ch.config ? round2Time(ch.config, ch.me.cls) : null; }
-function roundNow() { return round2() ? 2 : 1; }
-function trialRound(s) { if (ch.practice) return s.round || 1; const r = round2(); return r && s.createdAt >= r ? 2 : 1; }
 
 function logout() {
   ch.me = null; ch.practice = false; ls.set("bml-me", null);
@@ -172,7 +169,7 @@ function randPlace() {
 async function randSend() {
   const sub = rx.pending;
   if (!sub) return;
-  if (ch.practice) { rx.local.push(Object.assign({ createdAt: Date.now(), guess: rx.guess, round: roundNow() }, sub)); rx.pending = null; rx.msg = "연습 중이라 선생님 화면에는 모이지 않아요."; rx.msgBad = false; renderRandom(); return; }
+  if (ch.practice) { rx.local.push(Object.assign({ createdAt: Date.now(), guess: rx.guess }, sub)); rx.pending = null; rx.msg = "연습 중이라 선생님 화면에는 모이지 않아요."; rx.msgBad = false; renderRandom(); return; }
   if (!ch.store || !ch.me) { rx.msg = "서버에 연결되지 않아 결과를 보내지 못했어요."; rx.msgBad = true; renderRandom(); return; }
   rx.msg = "결과를 보내는 중…"; rx.msgBad = false; renderRandom();
   try {
@@ -214,9 +211,6 @@ function renderRandom() {
   const cars = rx.phase === "ready" ? nextCars() : rx.cars;
   const no = trials.length + (rx.phase === "done" && trials.some((x) => x.board === rx.boardStr) ? 0 : 1);
   $("randNo").textContent = `실험 ${Math.max(1, no)}`;
-  const rnow = roundNow();
-  $("roundChip").textContent = rnow === 2 ? "2판 · 1판 결과를 보고 예상" : "1판 · 감으로 예상";
-  $("roundChip").classList.toggle("r2", rnow === 2);
   $("randCars").innerHTML = `차 <b>${cars}대</b> <span class="meta">빨강 ${cars / 2} · 파랑 ${cars / 2} · 25칸 중 ${cars}칸 (밀도 ${(cars / 25).toFixed(2)})</span>`;
   // 판
   const g = rx.phase === "running" || rx.phase === "done" ? rx.frames[rx.fi] : rx.board;
@@ -253,9 +247,9 @@ function renderRandom() {
     const gu = guessOf(s, gs);
     const rep = s.result !== "fixed";
     const ok = isHit(gu, s.result);
-    return `<tr${k > 0 && trialRound(s) !== trialRound(trials[k - 1]) ? ' class="round-start"' : ""}><td>${k + 1}</td><td>${trialRound(s)}판</td><td class="mono">${s.n}대</td><td>${gu ? (gu === "fixed" ? "고정" : "반복") : "–"}</td><td><span class="tag ${s.result}">${rep ? "반복" : "고정"}</span></td><td>${ok === null ? "" : ok ? '<b class="hit">○</b>' : '<span class="miss">×</span>'}</td></tr>`;
+    return `<tr><td>${k + 1}</td><td class="mono">${s.n}대</td><td>${gu ? (gu === "fixed" ? "고정" : "반복") : "–"}</td><td><span class="tag ${s.result}">${rep ? "반복" : "고정"}</span></td><td>${ok === null ? "" : ok ? '<b class="hit">○</b>' : '<span class="miss">×</span>'}</td></tr>`;
   });
-  $("randBody").innerHTML = rows.length ? rows.reverse().join("") : '<tr><td colspan="6" class="empty" style="text-align:center">아직 실험하지 않았어요.</td></tr>';
+  $("randBody").innerHTML = rows.length ? rows.reverse().join("") : '<tr><td colspan="5" class="empty" style="text-align:center">아직 실험하지 않았어요.</td></tr>';
   const sc = guessScore(trials, (s) => guessOf(s, gs));
   $("randCount").textContent = trials.length ? `모두 ${trials.length}번 · 예상 적중 ${sc.hits}/${sc.known}` : "";
   // 점수
@@ -268,11 +262,6 @@ function renderRandom() {
   $("myStreak").textContent = sc.streak >= 2 ? `${sc.streak}번 연속으로 맞히는 중` : sc.known ? `${sc.known}번 중 ${sc.hits}번 맞힘` : "예상이 맞으면 1점";
   const top = classTopScore();
   $("classTop").textContent = top === null ? "" : `우리 반 최고 ${top}점`;
-  // 판별 적중
-  const by1 = trials.filter((s) => trialRound(s) === 1), by2 = trials.filter((s) => trialRound(s) === 2);
-  const s1 = guessScore(by1, (s) => guessOf(s, gs)), s2 = guessScore(by2, (s) => guessOf(s, gs));
-  $("roundScores").textContent = rnow === 2 || by2.length ? `1판 ${s1.hits}/${s1.known} 맞힘 · 2판 ${s2.hits}/${s2.known} 맞힘` : "";
-  renderRound1Chart();
   // 한 바퀴: 7가지 차 수를 한 번씩
   const L = RAND_COUNTS.length, k = trials.length - (rx.phase === "done" && trials.some((x) => x.board === rx.boardStr) ? 1 : 0);
   const c = Math.floor(Math.max(0, k) / L);
@@ -286,32 +275,6 @@ function renderRandom() {
   }).join("");
   const doneN = inCycle.length;
   $("cycleNote").textContent = `${c + 1}바퀴째 · ${doneN}/${L} ` + (doneN >= L ? "· 한 바퀴 완성! 다음 실험부터 새 바퀴예요." : "· 일곱 가지 차 수를 한 번씩 하면 한 바퀴예요.");
-}
-
-// 2판에서만: 1판 우리 반 결과 (차 수마다 고정이 나온 횟수 / 실험한 횟수)
-function renderRound1Chart() {
-  const r = round2();
-  const show = !ch.practice && !!r;
-  $("r1Panel").hidden = !show;
-  if (!show) return;
-  const by = {};
-  RAND_COUNTS.forEach((n) => { by[n] = { n: 0, fixed: 0 }; });
-  visibleSubs().filter((s) => s.createdAt < r && by[s.n]).forEach((s) => { by[s.n].n++; if (s.result === "fixed") by[s.n].fixed++; });
-  const svg = $("r1Chart"), NS = "http://www.w3.org/2000/svg";
-  const el = (tag, a, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t !== undefined) e.textContent = t; return e; };
-  while (svg.firstChild) svg.removeChild(svg.firstChild);
-  const W = 360, H = 200, l = 8, rr = 8, t = 22, b = 26, step = (W - l - rr) / RAND_COUNTS.length, bw = step * 0.6;
-  const X = (k) => l + step * (k + 0.5), Y = (v) => H - b - v * (H - t - b);
-  svg.append(el("line", { x1: l, x2: W - rr, y1: Y(0), y2: Y(0), stroke: "var(--ink)" }));
-  svg.append(el("line", { x1: l, x2: W - rr, y1: Y(1), y2: Y(1), stroke: "var(--line)", "stroke-dasharray": "3 3" }));
-  RAND_COUNTS.forEach((n, k) => {
-    const d = by[n];
-    svg.append(el("text", { x: X(k), y: H - 8, "text-anchor": "middle", "font-size": 12, fill: "var(--ink)" }, `${n}대`));
-    if (!d.n) { svg.append(el("text", { x: X(k), y: Y(0) - 6, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, "–")); return; }
-    const v = d.fixed / d.n;
-    svg.append(el("rect", { x: X(k) - bw / 2, y: Y(v), width: bw, height: Math.max(1, Y(0) - Y(v)), fill: "var(--ink)", rx: 2 }));
-    svg.append(el("text", { x: X(k), y: Math.max(14, Y(v) - 5), "text-anchor": "middle", "font-size": 11, fill: "var(--ink)" }, `${d.fixed}/${d.n}`));
-  });
 }
 
 /* ---------- 시작 ---------- */

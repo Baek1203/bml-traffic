@@ -1,5 +1,5 @@
 // Firestore 읽기·쓰기를 한곳에 모음
-//   config/main        : { classes: [반 이름], density: { on: 무작위 실험 열림, cars: 쓰지 않음, round2: { 반: 2판 시작 밀리초 } }, resetAt: { 반: 밀리초 }, updatedAt }
+//   config/main        : { classes: [반 이름], density: { on: 무작위 실험 열림, cars: 쓰지 않음 }, resetAt: { 반: 밀리초 }, updatedAt }
 //   submissions/{자동} : { cls, sid, mode, size, board, nr, nb, n, result, start, period, densityCars, createdAt, hidden }
 //     mode "density" = 무작위 실험, densityCars = 100+차 수(고정 예상) 또는 200+차 수(반복 예상)
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
@@ -12,13 +12,12 @@ import { firebaseConfig } from "./firebase-config.js";
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-export const DEFAULT_CONFIG = { classes: [], density: { on: false, cars: 16, round2: {} }, resetAt: {} };
+export const DEFAULT_CONFIG = { classes: [], density: { on: false, cars: 16 }, resetAt: {} };
 
 function normConfig(d) {
   const c = Object.assign({}, DEFAULT_CONFIG, d || {});
   c.classes = Array.isArray(c.classes) ? c.classes.filter((x) => typeof x === "string") : [];
-  c.density = Object.assign({ on: false, cars: 16, round2: {} }, c.density || {});
-  if (!c.density.round2 || typeof c.density.round2 !== "object") c.density.round2 = {};
+  c.density = Object.assign({ on: false, cars: 16 }, c.density || {});
   c.resetAt = c.resetAt || {};
   return c;
 }
@@ -32,7 +31,7 @@ export function watchConfig(cb, onError) {
 export function saveConfig(cfg) {
   const c = normConfig(cfg);
   return setDoc(doc(db, "config", "main"), {
-    classes: c.classes, density: { on: !!c.density.on, cars: c.density.cars | 0, round2: c.density.round2 }, resetAt: c.resetAt, updatedAt: serverTimestamp()
+    classes: c.classes, density: { on: !!c.density.on, cars: c.density.cars | 0 }, resetAt: c.resetAt, updatedAt: serverTimestamp()
   });
 }
 

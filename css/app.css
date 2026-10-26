@@ -348,11 +348,6 @@ tr.total td { font-weight: 600; border-top: 2px solid var(--line); }
 .rank-panel { margin-top: 16px; }
 .rank-panel h3 .meta { font-weight: 400; margin-left: 6px; }
 .rank-panel tr.rank1 td { background: var(--lane-soft); font-weight: 600; }
-.round-chip { background: var(--lane-soft); border-color: var(--lane); font-weight: 600; }
-.round-chip.r2 { background: var(--flow-soft); border-color: var(--flow); color: var(--flow); }
-.rand-table tr.round-start td { border-bottom: 2px solid var(--ink); }
-.r1-panel .chart { width: 100%; height: auto; }
-.dash-grid.round-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-@media (max-width: 1000px) { .dash-grid.round-cards { grid-template-columns: minmax(0, 1fr); } }
-.round-cards .big-num { font-size: 48px; }
-.round-cards .board-card.r2 { border-color: var(--flow); background: var(--flow-soft); }
+.dash-grid.rand-cards { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 1000px) { .dash-grid.rand-cards { grid-template-columns: minmax(0, 1fr); } }
+.rand-cards .big-num { font-size: 48px; }

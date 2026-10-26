@@ -53,7 +53,6 @@
     <div class="challenge-layout" id="randOpen" hidden>
       <div class="panel rand-main">
         <div class="rand-head">
-          <span class="chip round-chip" id="roundChip">1판</span>
           <span class="chip" id="randNo">실험 1</span>
           <span class="rand-cars" id="randCars"></span>
         </div>
@@ -67,14 +66,8 @@
             <div class="score-big"><span>내 점수</span><b id="myScore">0</b><small>점</small></div>
             <div class="score-side"><p id="myStreak"></p><p id="classTop"></p></div>
           </div>
-          <p class="meta" id="roundScores"></p>
           <div class="cycle" id="cycleChips" aria-label="이번 바퀴의 차 수"></div>
           <p class="meta" id="cycleNote"></p>
-        </div>
-        <div class="panel r1-panel" id="r1Panel" hidden>
-          <h2>1판 우리 반 결과</h2>
-          <p class="note">막대 위 숫자는 '고정이 나온 횟수 / 실험한 횟수'예요. 이걸 보고 2판의 예상을 정해 보세요.</p>
-          <svg id="r1Chart" class="chart" viewBox="0 0 360 200" role="img" aria-label="1판 우리 반 결과: 차 수마다 고정이 나온 횟수"></svg>
         </div>
         <div class="panel">
           <h2>무작위 실험</h2>
@@ -85,7 +78,7 @@
           <div class="btn-row" style="justify-content:space-between"><h2>내 실험</h2><span class="meta" id="randCount"></span></div>
           <div class="tbl-wrap">
             <table class="rand-table">
-              <thead><tr><th>번</th><th>판</th><th>차 수</th><th>예상</th><th>결과</th><th></th></tr></thead>
+              <thead><tr><th>번</th><th>차 수</th><th>예상</th><th>결과</th><th></th></tr></thead>
               <tbody id="randBody"></tbody>
             </table>
           </div>
