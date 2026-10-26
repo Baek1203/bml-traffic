@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>BML 교통 실험실 · 5×5 도전과 무작위 실험</title>
+<title>BML 교통 실험실 · 무작위 실험</title>
 <meta name="description" content="빨간 차는 오른쪽으로, 파란 차는 아래로. 신호등 없는 교차로에서 차들은 끝내 멈출까, 같은 모습을 되풀이할까?">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -15,7 +15,7 @@
   <div class="wrap">
     <div class="brand">
       <h1>BML 교통 실험실</h1>
-      <p>5×5 기록 도전과 무작위 실험 · 빨간 차는 오른쪽으로, 파란 차는 아래로</p>
+      <p>무작위 실험 · 빨간 차는 오른쪽으로, 파란 차는 아래로</p>
     </div>
     <div class="who" id="who" hidden></div>
   </div>
@@ -25,8 +25,8 @@
   <!-- 첫 화면: 반과 학번으로 들어가기 -->
   <section id="view-login" class="login-view" aria-label="들어가기">
     <div class="panel login-card">
-      <h2>5×5 기록 도전</h2>
-      <p class="note">반을 고르고 학번을 적으면 시작할 수 있어요. 내가 만든 배치는 선생님 화면에 모여요.</p>
+      <h2>무작위 실험</h2>
+      <p class="note">반을 고르고 학번을 적으면 시작할 수 있어요. 내 실험 결과는 선생님 화면에 모여요.</p>
       <div class="login-grid">
         <div class="field">
           <label class="label" for="loginCls">반</label>
@@ -44,52 +44,16 @@
     </div>
   </section>
 
-  <!-- 들어온 뒤: ① 5×5 기록 도전 / ② 무작위 실험 -->
-  <div id="view-inside" hidden>
-  <div class="stu-tabs">
-    <div class="seg" role="group" aria-label="활동 고르기">
-      <button type="button" id="stab-challenge" aria-pressed="true">① 5×5 기록 도전</button>
-      <button type="button" id="stab-random" aria-pressed="false">② 무작위 실험</button>
-    </div>
-    <p class="open-note" id="randOpenNote" hidden>무작위 실험이 열렸어요. 선생님이 안내하면 ②를 눌러 넘어가세요.</p>
-  </div>
-
-  <!-- 5×5 도전 -->
-  <section id="view-challenge" aria-label="5×5 기록 도전">
-    <div class="challenge-layout">
-      <div id="simChallenge"></div>
-      <aside class="side">
-        <div class="panel">
-          <h2>도전 두 가지</h2>
-          <p class="note">빨간 차와 파란 차의 수가 같아야 기록으로 인정돼요. 숫자는 차의 수예요.</p>
-          <p class="tip">한 번에 최고 기록을 찾으려 하지 않아도 돼요. 생각나는 배치를 여러 개 만들어 보고, 고정이든 반복이든 나온 결과를 모두 제출해 보세요.</p>
-          <div class="challenge-cards" id="ccards"></div>
-        </div>
-
-        <div class="panel">
-          <h2>이번 배치</h2>
-          <div class="result-card" id="resultCard"></div>
-          <button class="btn lane" id="submitBtn" disabled>이 배치 제출하기</button>
-          <p class="status-line" id="submitMsg" aria-live="polite"></p>
-        </div>
-
-        <div class="panel">
-          <div class="btn-row" style="justify-content:space-between"><h2>내 제출</h2><span class="meta" id="myCount"></span></div>
-          <div class="mylist" id="myList"></div>
-        </div>
-      </aside>
-    </div>
-  </section>
-
   <!-- 무작위 실험 -->
   <section id="view-random" aria-label="무작위 실험" hidden>
     <div class="panel rand-closed" id="randClosed">
-      <h2>무작위 실험은 아직 닫혀 있어요</h2>
-      <p class="note">선생님이 열면 여기에서 시작할 수 있어요. 그동안 ① 5×5 기록 도전을 계속해 보세요.</p>
+      <h2>아직 시작 전이에요</h2>
+      <p class="note">선생님이 실험을 열면 여기에서 바로 시작할 수 있어요. 그동안 활동지 ①에 '10번 하면 고정이 몇 번쯤 나올지' 예상을 적어 두세요.</p>
     </div>
     <div class="challenge-layout" id="randOpen" hidden>
       <div class="panel rand-main">
         <div class="rand-head">
+          <span class="chip round-chip" id="roundChip">1판</span>
           <span class="chip" id="randNo">실험 1</span>
           <span class="rand-cars" id="randCars"></span>
         </div>
@@ -103,8 +67,14 @@
             <div class="score-big"><span>내 점수</span><b id="myScore">0</b><small>점</small></div>
             <div class="score-side"><p id="myStreak"></p><p id="classTop"></p></div>
           </div>
+          <p class="meta" id="roundScores"></p>
           <div class="cycle" id="cycleChips" aria-label="이번 바퀴의 차 수"></div>
           <p class="meta" id="cycleNote"></p>
+        </div>
+        <div class="panel r1-panel" id="r1Panel" hidden>
+          <h2>1판 우리 반 결과</h2>
+          <p class="note">막대 위 숫자는 '고정이 나온 횟수 / 실험한 횟수'예요. 이걸 보고 2판의 예상을 정해 보세요.</p>
+          <svg id="r1Chart" class="chart" viewBox="0 0 360 200" role="img" aria-label="1판 우리 반 결과: 차 수마다 고정이 나온 횟수"></svg>
         </div>
         <div class="panel">
           <h2>무작위 실험</h2>
@@ -115,7 +85,7 @@
           <div class="btn-row" style="justify-content:space-between"><h2>내 실험</h2><span class="meta" id="randCount"></span></div>
           <div class="tbl-wrap">
             <table class="rand-table">
-              <thead><tr><th>번</th><th>차 수</th><th>예상</th><th>결과</th><th></th></tr></thead>
+              <thead><tr><th>번</th><th>판</th><th>차 수</th><th>예상</th><th>결과</th><th></th></tr></thead>
               <tbody id="randBody"></tbody>
             </table>
           </div>
@@ -123,8 +93,6 @@
       </aside>
     </div>
   </section>
-  </div>
-
 </main>
 <script type="module" src="js/app.js"></script>
 </body>

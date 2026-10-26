@@ -150,6 +150,13 @@ export function guessScore(trials, getGuess = decodeGuess) {
   }
   return { hits, known, streak };
 }
+// 1판·2판: 교사가 '2판 시작'을 누른 때(config.density.round2[반], 밀리초)부터 그 반은 2판
+export function round2Time(config, cls) {
+  const d = config && config.density, r = d && d.round2 && d.round2[cls];
+  const since = (config && config.resetAt && config.resetAt[cls]) || 0;
+  return typeof r === "number" && r > since ? r : null;
+}
+export function roundOf(s, config) { const r = round2Time(config, s.cls); return r && s.createdAt >= r ? 2 : 1; }
 // 학생마다 차 수 7가지를 한 바퀴에 한 번씩, 바퀴마다 순서를 섞어서 (학번으로 정해지는 순서라 새로고침해도 같음)
 function mulberry32(a) {
   return function () {
