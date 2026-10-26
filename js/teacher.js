@@ -85,7 +85,7 @@ $("newCls").addEventListener("input", () => { $("clsErr").textContent = ""; });
 
 async function saveCfg(patch) {
   const next = Object.assign({}, T.config, patch);
-  try { await T.store.saveConfig(next); $("densSaved").textContent = ""; }
+  try { await T.store.saveConfig(next); }
   catch (e) { $("clsErr").textContent = "저장하지 못했어요. 인터넷 연결이나 데이터베이스 규칙을 확인해 주세요."; }
 }
 
@@ -172,32 +172,30 @@ $("btnHide").addEventListener("click", async () => {
 });
 
 /* ---------- 밀도 조사 ---------- */
-const CAR_OPTIONS = [6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-$("densCars").innerHTML = CAR_OPTIONS.map((n) => `<option value="${n}">${n}대 (밀도 ${(n / 25).toFixed(2)})</option>`).join("");
-$("densOn").addEventListener("change", (e) => { saveCfg({ density: { on: e.target.checked, cars: +$("densCars").value } }); $("densSaved").textContent = "저장하는 중…"; });
-$("densCars").addEventListener("change", (e) => { saveCfg({ density: { on: $("densOn").checked, cars: +e.target.value } }); $("densSaved").textContent = "저장하는 중…"; });
+// 학생이 제출한 배치를 모두 모아 차 수별 고정 비율을 봄 (따로 모으는 밀도 조사 모드는 없음)
+const CAR_OPTIONS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
 attachZoom($("densZoom"), $("densChart"), "밀도 조사");
 
 function renderDensity() {
-  if (T.config) { $("densOn").checked = !!T.config.density.on; $("densCars").value = String(T.config.density.cars); }
-  const subs = cleanSubs().filter((s) => s.mode === "density" && s.densityCars === s.n && s.nr === s.nb);
+  const subs = cleanSubs().filter(balanced);
+  $("densMeta").textContent = subs.length ? `${T.cls === ALL ? "모든 반" : T.cls} · 배치 ${subs.length}개` : "";
   const by = {};
   subs.forEach((s) => { (by[s.n] = by[s.n] || { n: 0, fixed: 0 }); by[s.n].n++; if (s.result === "fixed") by[s.n].fixed++; });
   const rows = Object.keys(by).map(Number).sort((a, b) => a - b);
   $("densBody").innerHTML = rows.length ? rows.map((n) => {
     const r = by[n], rnd = RANDOM_FIXED_5x5[n];
     return `<tr><td>${n}대 (${(n / 25).toFixed(2)})</td><td class="mono">${r.n}</td><td class="mono">${r.fixed}</td><td class="mono">${r.n - r.fixed}</td><td class="mono">${(r.fixed / r.n).toFixed(2)}</td><td class="mono">${rnd === undefined ? "–" : rnd.toFixed(2)}</td></tr>`;
-  }).join("") : '<tr><td colspan="6" class="empty" style="text-align:center">밀도 조사로 모인 제출이 아직 없어요.</td></tr>';
+  }).join("") : '<tr><td colspan="6" class="empty" style="text-align:center">아직 제출이 없어요. 학생들이 5×5 도전에서 제출하면 여기에 모여요.</td></tr>';
 
   // 그래프: 우리 반(막대) · 컴퓨터 무작위(점)
   const svg = $("densChart"), NS = "http://www.w3.org/2000/svg";
   const el = (tag, a, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t !== undefined) e.textContent = t; return e; };
   while (svg.firstChild) svg.removeChild(svg.firstChild);
   const W = 560, H = 300, l = 46, r = 14, t = 44, b = 44;
-  const X = (n) => l + (n - 5) / 20 * (W - l - r), Y = (v) => H - b - v * (H - t - b);
+  const X = (n) => l + (n - 1) / 24 * (W - l - r), Y = (v) => H - b - v * (H - t - b);
   svg.append(el("text", { x: 0, y: 16, "font-size": 14, fill: "var(--ink)" }, "차 수에 따른 고정 비율"));
   svg.append(el("rect", { x: l, y: 26, width: 12, height: 10, fill: "var(--ink)" }));
-  svg.append(el("text", { x: l + 18, y: 35, "font-size": 12, fill: "var(--muted)" }, "우리 반 제출"));
+  svg.append(el("text", { x: l + 18, y: 35, "font-size": 12, fill: "var(--muted)" }, "학생 제출 배치"));
   svg.append(el("circle", { cx: l + 118, cy: 31, r: 4, fill: "var(--surface)", stroke: "var(--muted)", "stroke-width": 2 }));
   svg.append(el("text", { x: l + 128, y: 35, "font-size": 12, fill: "var(--muted)" }, "컴퓨터 무작위 배치"));
   for (let k = 0; k <= 4; k++) {
@@ -259,7 +257,6 @@ function renderGallery() {
     list = list.filter((s) => !s.hidden);
     if (T.filter === "fixed") list = list.filter((s) => s.result === "fixed");
     if (T.filter === "repeat") list = list.filter((s) => s.result !== "fixed");
-    if (T.filter === "density") list = list.filter((s) => s.mode === "density");
     if (T.filter === "warn") list = list.filter((s) => !verify(s));
   }
   if (T.sid) list = list.filter((s) => s.cls + "|" + s.sid === T.sid);
@@ -322,7 +319,6 @@ async function connect() {
   T.store.watchConfig((cfg) => {
     T.config = cfg;
     $("connLine").textContent = "실시간으로 연결됨 · 학생이 제출하면 바로 반영돼요";
-    if (cfg.density) $("densSaved").textContent = cfg.density.on ? `학생 화면: ${cfg.density.cars}대 밀도 조사 중` : "학생 화면: 밀도 조사 꺼짐";
     renderAll();
   }, () => { $("connLine").textContent = "설정을 불러오지 못했어요. 데이터베이스 설정을 확인해 주세요."; });
   subscribe();

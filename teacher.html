@@ -85,14 +85,9 @@
   <section class="section">
     <div class="section-head">
       <h2 class="section-title">밀도 조사</h2>
-      <div class="btn-row">
-        <label class="toggle"><input type="checkbox" id="densOn"> 학생 화면에 밀도 조사 켜기</label>
-        <label class="label" for="densCars">차 수</label>
-        <select id="densCars"></select>
-        <span class="meta" id="densSaved"></span>
-      </div>
+      <span class="meta" id="densMeta"></span>
     </div>
-    <p class="note">켜면 학생들은 정한 차 수(빨강·파랑 반씩)로만 제출할 수 있어요. 차 수를 바꿔 가며 모으면 차 수별로 고정되는 비율을 비교할 수 있어요. 제출은 모든 반이 함께 쓰는 설정이에요.</p>
+    <p class="note">학생들이 5×5 도전에서 제출한 배치를 모두 모아, 차 수(밀도)마다 몇 개가 고정이었는지 봅니다. 따로 모으지 않아도 제출이 쌓일수록 자동으로 채워져요. 위에서 고른 반만 보거나 모든 반을 함께 볼 수 있어요. 학생 배치는 기록을 노리고 일부러 만든 것이라 컴퓨터 무작위 배치와 다르게 나올 수 있는데, 그 차이도 좋은 이야깃거리예요.</p>
     <div class="two-col">
       <div class="tbl-wrap">
         <table>
@@ -135,7 +130,6 @@
           <button data-f="all" aria-pressed="true">전체</button>
           <button data-f="fixed" aria-pressed="false">고정</button>
           <button data-f="repeat" aria-pressed="false">반복</button>
-          <button data-f="density" aria-pressed="false">밀도 조사</button>
           <button data-f="warn" aria-pressed="false">확인 필요</button>
           <button data-f="hidden" aria-pressed="false">숨긴 것</button>
         </div>

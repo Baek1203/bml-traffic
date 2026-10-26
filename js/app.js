@@ -90,21 +90,8 @@ $("loginSid").addEventListener("input", () => { $("loginErr").textContent = ""; 
 $("loginSid").addEventListener("keydown", (e) => { if (e.key === "Enter") login(); });
 $("practiceBtn").addEventListener("click", () => { ch.practice = true; renderWho(); route(); renderChallengeSide(); });
 
-function densityRule() {
-  const d = ch.config && ch.config.density;
-  return d && d.on ? (d.cars | 0) : null;
-}
-
 function renderChallengeSide() {
   renderLogin();
-  // 밀도 조사 안내
-  const cars = densityRule();
-  const ban = $("densityBanner");
-  if (cars) {
-    ban.hidden = false;
-    ban.innerHTML = `<strong>밀도 조사 중: 차 ${cars}대 (빨강 ${cars / 2} · 파랑 ${cars / 2})</strong>선생님이 정한 수만큼 차를 놓고 결과를 제출하세요. 고정인지 반복인지가 반 전체 결과로 모여요.`;
-  } else ban.hidden = true;
-
   // 도전 카드
   const subs = visibleSubs();
   const best = bestRecords(subs), mine = ch.me ? bestRecords(mySubs()) : null;
@@ -129,10 +116,7 @@ function renderChallengeSide() {
   } else {
     const tag = `<span class="tag ${v.type}">${RESULT_TEXT[v.type]}</span>`;
     let lines = [`${tag} 차 <b>${st.n}대</b> (빨강 ${st.nr} · 파랑 ${st.nb})`];
-    if (cars) {
-      if (st.n !== cars || st.nr !== st.nb) { lines.push(`지금은 밀도 조사 중이에요. 빨강 ${cars / 2}대, 파랑 ${cars / 2}대로 맞춰 주세요.`); why = "차 수를 맞추면 제출할 수 있어요."; }
-      else { can = true; lines.push("밀도 조사 결과로 제출돼요."); }
-    } else if (!balanced(curSub)) {
+    if (!balanced(curSub)) {
       lines.push("빨간 차와 파란 차의 수가 달라서 기록으로 인정되지 않아요.");
       why = "빨강과 파랑의 수를 같게 맞춰 보세요.";
     } else {
@@ -142,12 +126,12 @@ function renderChallengeSide() {
       const ties = titles.filter((c) => best[c.id].value === st.n);
       if (news.length) lines.push(`우리 반 새 기록이에요! (${news.map((c) => c.short).join(", ")})`);
       else if (ties.length) lines.push(`우리 반 최고 기록과 같아요. (${ties.map((c) => c.short).join(", ")})`);
-      else lines.push("기록이 아니어도 괜찮아요. 제출하면 반 전체 사례로 모여요.");
+      else lines.push("기록이 아니어도 괜찮아요. 제출한 배치는 모두 반 전체 밀도 조사에 쓰여요.");
       can = true;
     }
     card.innerHTML = lines.map((l) => `<div>${l}</div>`).join("");
   }
-  if (can && ch.me && mySubs().some((s) => s.board === st.board && (s.mode === (cars ? "density" : "challenge")))) { can = false; why = "이미 제출한 배치예요. 칸 하나만 바꿔서 다시 해 보세요."; }
+  if (can && ch.me && mySubs().some((s) => s.board === st.board)) { can = false; why = "이미 제출한 배치예요. 칸 하나만 바꿔서 다시 해 보세요."; }
   if (can && ch.practice) { can = false; why = "연습 중이라 제출되지 않아요."; }
   if (can && !ch.store) { can = false; why = "서버에 연결되지 않아 제출할 수 없어요."; }
   if (can && !ch.me) { can = false; why = "반과 학번으로 먼저 들어가 주세요."; }
@@ -181,10 +165,8 @@ function renderChallengeSide() {
 async function submit() {
   const st = ch.state;
   if (!st || !st.verdict || !ch.me || !ch.store) return;
-  const cars = densityRule();
   const c = classify(st.start);   // 판정을 처음부터 다시 계산해서 보냄
-  const sub = { cls: ch.me.cls, sid: ch.me.sid, mode: cars ? "density" : "challenge", board: st.board, nr: c.nr, nb: c.nb, n: c.n, result: c.type, start: c.start, period: c.period };
-  if (cars) sub.densityCars = cars;
+  const sub = { cls: ch.me.cls, sid: ch.me.sid, mode: "challenge", board: st.board, nr: c.nr, nb: c.nb, n: c.n, result: c.type, start: c.start, period: c.period };
   ch.sending = true; $("submitBtn").disabled = true;
   const msg = $("submitMsg");
   msg.textContent = "제출하는 중…"; msg.className = "status-line";
