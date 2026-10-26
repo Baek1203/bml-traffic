@@ -11,6 +11,7 @@ const ls = {
 
 /* ---------- 규칙 익히기 ---------- */
 const GROUP_NOTE = {
+  e: "규칙 ④ 예제: '① ○× 표시하기'를 누르기 전에 학생들에게 어느 차가 갈 수 있는지 먼저 물어보세요. 앞차가 이번 차례에 떠나더라도 뒤차는 ×예요. 표시는 차례가 시작될 때의 판을 보고 하니까요. 그다음 '② ○ 차만 한꺼번에 옮기기'를 눌러요.",
   d: "시연 ①②③: 라운드가 끝날 때마다 아래 '라운드 기록'에 판 모습이 쌓여요. '같은 모습 자동으로 찾기'를 끄고 학생들이 먼저 같은 모습을 찾게 해 보세요.",
   p: "활동지 '손으로 돌려 보기'의 연습 가·나·다예요. 학생들이 판 위에서 직접 해 본 뒤 한 라운드씩 함께 돌리며 점검하세요.",
   q: "활동지 '4×4 예상하고 확인하기'의 배치예요. 학생들이 예상을 적은 뒤 함께 돌려 확인하세요.",
@@ -19,6 +20,8 @@ const GROUP_NOTE = {
 const rules = { L: 3, preset: "d1" };
 const rulesSim = new Simulator($("simRules"), {
   L: 3,
+  checkStep: true,
+  showCheckToggle: true,
   onEdit: (b) => {
     ls.set("bml-custom-" + rules.L, serialize(b));
     if (rules.preset !== "custom") { rules.preset = "custom"; renderPresetButtons(); }
@@ -69,5 +72,5 @@ function showView(name) {
 }
 TABS.forEach((t) => $("tab-" + t).addEventListener("click", () => showView(t)));
 
-loadRules(3, "d1");
+loadRules(3, "e1");
 showView((location.hash || "").replace("#", ""));

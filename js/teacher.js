@@ -1,7 +1,8 @@
-// 교사 대시보드 — 반 목록, 실시간 기록판, 다시 보기, 밀도 조사, 학생별 기록, 제출 모아 보기
+// 교사 대시보드 — 반 목록, 실시간 기록판, 다시 보기, 무작위 실험(상대도수), 학생별 기록, 제출 모아 보기
 import { parse, classify, CHALLENGES, challengeIds, bestRecords, balanced, RESULT_TEXT, RANDOM_FIXED_5x5 } from "./core.js";
 import { Simulator, miniBoard } from "./sim-ui.js";
 import { attachZoom } from "./zoom.js";
+import { publishRandom } from "./shared.js";
 
 const $ = (id) => document.getElementById(id);
 const ls = {
@@ -15,7 +16,7 @@ const T = {
   store: null, config: null, subs: [], unsub: null,
   cls: ls.get("bml-t-cls", ALL),
   showBoards: false, showSids: false, showOld: false,
-  filter: "all", sid: null, selected: null,
+  filter: "all", sid: null, selected: null, cmp: false,
   verifyCache: new Map()
 };
 
@@ -35,6 +36,10 @@ function cleanSubs() {
   const since = T.showOld ? {} : (T.config ? T.config.resetAt || {} : {});
   return T.subs.filter((s) => !s.hidden && verify(s) && s.createdAt >= (since[s.cls] || 0));
 }
+// 5×5 도전 제출과 무작위 실험 제출(mode "density")은 따로 셈
+const isRandom = (s) => s.mode === "density";
+function challengeSubs() { return cleanSubs().filter((s) => !isRandom(s)); }
+function randomSubs() { return cleanSubs().filter((s) => isRandom(s) && balanced(s)); }
 function scopeSubs() {
   const since = T.showOld ? {} : (T.config ? T.config.resetAt || {} : {});
   return T.subs.filter((s) => s.createdAt >= (since[s.cls] || 0));
@@ -98,7 +103,7 @@ $("clsSel").addEventListener("change", (e) => {
 
 /* ---------- 기록판 ---------- */
 function renderBest() {
-  const subs = cleanSubs();
+  const subs = challengeSubs();
   const best = bestRecords(subs);
   const name = T.cls === ALL ? "모든 반" : T.cls;
   $("boardTitle").textContent = `실시간 기록판 · ${name}`;
@@ -132,7 +137,7 @@ function renderBest() {
   }
   const bal = subs.filter(balanced), nFix = bal.filter((s) => s.result === "fixed").length;
   const people = new Set(subs.map((s) => s.cls + "|" + s.sid)).size;
-  $("boardCount").textContent = subs.length ? `지금까지 제출 ${subs.length}개 (학생 ${people}명) · 기록으로 세는 제출 중 고정 ${nFix}개, 반복 ${bal.length - nFix}개` : "";
+  $("boardCount").textContent = subs.length ? `지금까지 도전 제출 ${subs.length}개 (학생 ${people}명) · 기록으로 세는 제출 중 고정 ${nFix}개, 반복 ${bal.length - nFix}개` : "";
 }
 $("showBoards").addEventListener("change", (e) => { T.showBoards = e.target.checked; renderBest(); });
 $("showSids").addEventListener("change", (e) => { T.showSids = e.target.checked; renderBest(); });
@@ -171,51 +176,73 @@ $("btnHide").addEventListener("click", async () => {
   try { await T.store.setHidden(s.id, !s.hidden); } catch (e) { $("replayInfo").textContent = "숨기기를 저장하지 못했어요."; }
 });
 
-/* ---------- 밀도 조사 ---------- */
-// 학생이 제출한 배치를 모두 모아 차 수별 고정 비율을 봄 (따로 모으는 밀도 조사 모드는 없음)
-const CAR_OPTIONS = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24];
-attachZoom($("densZoom"), $("densChart"), "밀도 조사");
+/* ---------- 무작위 실험 ---------- */
+// 학생이 '② 무작위 실험'에서 앱이 정한 차 수로 아무렇게나 놓고 판정한 결과 → 차 수별 고정의 상대도수
+const RAND_COUNTS = [10, 12, 14, 16, 18, 20, 22];
+attachZoom($("densZoom"), $("densChart"), "무작위 실험 · 고정의 상대도수");
+$("randOn").addEventListener("change", (e) => {
+  if (!T.config) { e.target.checked = false; return; }
+  saveCfg({ density: { on: e.target.checked, cars: (T.config.density && T.config.density.cars) || 16 } });
+});
+$("densCmp").addEventListener("change", (e) => { T.cmp = e.target.checked; renderDensity(); });
 
 function renderDensity() {
-  const subs = cleanSubs().filter(balanced);
-  $("densMeta").textContent = subs.length ? `${T.cls === ALL ? "모든 반" : T.cls} · 배치 ${subs.length}개` : "";
+  const on = !!(T.config && T.config.density && T.config.density.on);
+  $("randOn").checked = on;
+  $("randOn").closest("label").classList.toggle("on", on);
+  const subs = randomSubs();
+  const people = new Set(subs.map((s) => s.cls + "|" + s.sid)).size;
+  const label = T.cls === ALL ? "모든 반" : T.cls;
+  $("densMeta").textContent = subs.length ? `${label} · 실험 ${subs.length}번 · 학생 ${people}명` : `${label} · 아직 실험 없음`;
   const by = {};
+  RAND_COUNTS.forEach((n) => { by[n] = { n: 0, fixed: 0 }; });
   subs.forEach((s) => { (by[s.n] = by[s.n] || { n: 0, fixed: 0 }); by[s.n].n++; if (s.result === "fixed") by[s.n].fixed++; });
+  publishRandom({ label, by, total: subs.length });
   const rows = Object.keys(by).map(Number).sort((a, b) => a - b);
-  $("densBody").innerHTML = rows.length ? rows.map((n) => {
+  $("densHead").innerHTML = `<tr><th>차 수</th><th>밀도</th><th>실험</th><th>고정</th><th>반복</th><th>고정의 상대도수</th>${T.cmp ? "<th>컴퓨터 4000번</th>" : ""}</tr>`;
+  $("densBody").innerHTML = rows.map((n) => {
     const r = by[n], rnd = RANDOM_FIXED_5x5[n];
-    return `<tr><td>${n}대 (${(n / 25).toFixed(2)})</td><td class="mono">${r.n}</td><td class="mono">${r.fixed}</td><td class="mono">${r.n - r.fixed}</td><td class="mono">${(r.fixed / r.n).toFixed(2)}</td><td class="mono">${rnd === undefined ? "–" : rnd.toFixed(2)}</td></tr>`;
-  }).join("") : '<tr><td colspan="6" class="empty" style="text-align:center">아직 제출이 없어요. 학생들이 5×5 도전에서 제출하면 여기에 모여요.</td></tr>';
+    return `<tr><td>${n}대</td><td class="mono">${(n / 25).toFixed(2)}</td><td class="mono">${r.n}</td><td class="mono">${r.fixed}</td><td class="mono">${r.n - r.fixed}</td><td class="mono">${r.n ? (r.fixed / r.n).toFixed(2) : "–"}</td>${T.cmp ? `<td class="mono">${rnd === undefined ? "–" : rnd.toFixed(2)}</td>` : ""}</tr>`;
+  }).join("") + `<tr class="total"><td>합계</td><td></td><td class="mono">${subs.length}</td><td class="mono">${subs.filter((s) => s.result === "fixed").length}</td><td class="mono">${subs.filter((s) => s.result !== "fixed").length}</td><td></td>${T.cmp ? "<td></td>" : ""}</tr>`;
 
-  // 그래프: 우리 반(막대) · 컴퓨터 무작위(점)
+  // 막대그래프: 차 수마다 고정의 상대도수 (고정 횟수 ÷ 실험 횟수)
   const svg = $("densChart"), NS = "http://www.w3.org/2000/svg";
   const el = (tag, a, t) => { const e = document.createElementNS(NS, tag); for (const k in a) e.setAttribute(k, a[k]); if (t !== undefined) e.textContent = t; return e; };
   while (svg.firstChild) svg.removeChild(svg.firstChild);
-  const W = 560, H = 300, l = 46, r = 14, t = 44, b = 44;
-  const X = (n) => l + (n - 1) / 24 * (W - l - r), Y = (v) => H - b - v * (H - t - b);
-  svg.append(el("text", { x: 0, y: 16, "font-size": 14, fill: "var(--ink)" }, "차 수에 따른 고정 비율"));
-  svg.append(el("rect", { x: l, y: 26, width: 12, height: 10, fill: "var(--ink)" }));
-  svg.append(el("text", { x: l + 18, y: 35, "font-size": 12, fill: "var(--muted)" }, "학생 제출 배치"));
-  svg.append(el("circle", { cx: l + 118, cy: 31, r: 4, fill: "var(--surface)", stroke: "var(--muted)", "stroke-width": 2 }));
-  svg.append(el("text", { x: l + 128, y: 35, "font-size": 12, fill: "var(--muted)" }, "컴퓨터 무작위 배치"));
+  const W = 560, H = 320, l = 50, r = 14, t = 46, b = 58;
+  const step = (W - l - r) / rows.length;
+  const X = (k) => l + step * (k + 0.5), Y = (v) => H - b - v * (H - t - b);
+  svg.append(el("text", { x: 0, y: 16, "font-size": 14, fill: "var(--ink)" }, "차 수에 따른 고정의 상대도수"));
+  svg.append(el("rect", { x: l, y: 27, width: 12, height: 10, fill: "var(--ink)" }));
+  svg.append(el("text", { x: l + 18, y: 36, "font-size": 12, fill: "var(--muted)" }, `${label} 무작위 실험`));
+  if (T.cmp) {
+    svg.append(el("circle", { cx: l + 150, cy: 32, r: 4, fill: "var(--surface)", stroke: "var(--jam)", "stroke-width": 2 }));
+    svg.append(el("text", { x: l + 160, y: 36, "font-size": 12, fill: "var(--muted)" }, "컴퓨터 4000번"));
+  }
   for (let k = 0; k <= 4; k++) {
     const v = k / 4;
     svg.append(el("line", { x1: l, x2: W - r, y1: Y(v), y2: Y(v), stroke: "var(--line)" }));
     svg.append(el("text", { x: l - 8, y: Y(v) + 4, "text-anchor": "end", "font-size": 11, fill: "var(--muted)" }, v.toFixed(2)));
   }
-  CAR_OPTIONS.forEach((n) => svg.append(el("text", { x: X(n), y: H - b + 18, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, n)));
-  svg.append(el("text", { x: (l + W - r) / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, "차 수 (빨강·파랑 반씩)"));
   svg.append(el("line", { x1: l, x2: W - r, y1: Y(0), y2: Y(0), stroke: "var(--ink)" }));
-  const pts = Object.keys(RANDOM_FIXED_5x5).map(Number).sort((a, b) => a - b);
-  svg.append(el("polyline", { points: pts.map((n) => `${X(n)},${Y(RANDOM_FIXED_5x5[n])}`).join(" "), fill: "none", stroke: "var(--grid)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
-  pts.forEach((n) => svg.append(el("circle", { cx: X(n), cy: Y(RANDOM_FIXED_5x5[n]), r: 4, fill: "var(--surface)", stroke: "var(--muted)", "stroke-width": 2 })));
-  rows.forEach((n) => {
-    const v = by[n].fixed / by[n].n;
-    const bar = el("rect", { x: X(n) - 9, y: Y(v), width: 18, height: Math.max(1, Y(0) - Y(v)), fill: "var(--ink)" });
-    bar.append(el("title", {}, `${n}대: ${by[n].n}개 중 ${by[n].fixed}개 고정`));
+  rows.forEach((n, k) => {
+    svg.append(el("text", { x: X(k), y: H - b + 17, "text-anchor": "middle", "font-size": 12, fill: "var(--ink)" }, `${n}대`));
+    svg.append(el("text", { x: X(k), y: H - b + 32, "text-anchor": "middle", "font-size": 10.5, fill: "var(--muted)" }, (n / 25).toFixed(2)));
+    const d = by[n];
+    if (!d.n) { svg.append(el("text", { x: X(k), y: Y(0) - 6, "text-anchor": "middle", "font-size": 11, fill: "var(--muted)" }, "0번")); return; }
+    const v = d.fixed / d.n, bw = Math.min(40, step * 0.62);
+    const bar = el("rect", { x: X(k) - bw / 2, y: Y(v), width: bw, height: Math.max(1, Y(0) - Y(v)), fill: "var(--ink)", rx: 2 });
+    bar.append(el("title", {}, `${n}대: ${d.n}번 중 ${d.fixed}번 고정 → ${(v).toFixed(2)}`));
     svg.append(bar);
-    svg.append(el("text", { x: X(n), y: Y(v) - 6, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)" }, `${by[n].fixed}/${by[n].n}`));
+    svg.append(el("text", { x: X(k), y: Y(v) - 6, "text-anchor": "middle", "font-size": 11, fill: "var(--ink)" }, `${d.fixed}/${d.n}`));
   });
+  svg.append(el("text", { x: (l + W - r) / 2, y: H - 6, "text-anchor": "middle", "font-size": 12, fill: "var(--muted)" }, "차 수 (아래 숫자는 밀도 = 차 수 ÷ 25)"));
+  if (T.cmp) {
+    const pts = rows.filter((n) => RANDOM_FIXED_5x5[n] !== undefined);
+    svg.append(el("polyline", { points: pts.map((n) => `${X(rows.indexOf(n))},${Y(RANDOM_FIXED_5x5[n])}`).join(" "), fill: "none", stroke: "var(--jam)", "stroke-width": 1.5, "stroke-dasharray": "4 4" }));
+    pts.forEach((n) => svg.append(el("circle", { cx: X(rows.indexOf(n)), cy: Y(RANDOM_FIXED_5x5[n]), r: 4, fill: "var(--surface)", stroke: "var(--jam)", "stroke-width": 2 })));
+  }
+  if (!subs.length) svg.append(el("text", { x: (l + W - r) / 2, y: (t + H - b) / 2, "text-anchor": "middle", "font-size": 13, fill: "var(--muted)" }, on ? "학생들이 실험하면 막대가 쌓여요" : "위의 '무작위 실험 열기'를 켜면 학생 화면에서 시작할 수 있어요"));
 }
 
 /* ---------- 학생별 기록 ---------- */
@@ -225,12 +252,13 @@ function renderStudents() {
   all.forEach((s) => { const k = s.cls + "|" + s.sid; if (!by.has(k)) by.set(k, []); by.get(k).push(s); });
   const rows = [...by.entries()].sort((a, b) => a[0].split("|")[1].localeCompare(b[0].split("|")[1]) || a[0].localeCompare(b[0]));
   $("stuBody").innerHTML = "";
-  if (!rows.length) { $("stuBody").innerHTML = '<tr><td colspan="8" class="empty" style="text-align:center">아직 제출이 없어요.</td></tr>'; return; }
+  if (!rows.length) { $("stuBody").innerHTML = '<tr><td colspan="9" class="empty" style="text-align:center">아직 제출이 없어요.</td></tr>'; return; }
   for (const [k, list] of rows) {
     const [cls, sid] = k.split("|");
-    const good = list.filter(verify);
+    const good = list.filter(verify).filter((s) => !isRandom(s));
+    const nRand = list.filter(isRandom).length;
     const best = bestRecords(good);
-    const warn = list.length - good.length;
+    const warn = list.filter((s) => !verify(s)).length;
     const bal = good.filter(balanced);
     const hasFixed = bal.some((s) => s.result === "fixed"), hasRep = bal.some((s) => s.result !== "fixed");
     const top = best.minFixed.value === 10 || (best.maxRepeat.value || 0) >= 20;
@@ -238,7 +266,7 @@ function renderStudents() {
     const tr = document.createElement("tr");
     tr.className = "clickable" + (T.sid === k ? " sel" : "");
     const v = (x) => (x === null ? "–" : x);
-    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length}</td><td class="mono">${v(best.minFixed.value)}</td><td class="mono">${v(best.maxRepeat.value)}</td><td class="mono">${warn || ""}</td><td class="left">${level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
+    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length - nRand}</td><td class="mono">${v(best.minFixed.value)}</td><td class="mono">${v(best.maxRepeat.value)}</td><td class="mono">${nRand || ""}</td><td class="mono">${warn || ""}</td><td class="left">${level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
     tr.addEventListener("click", () => { T.sid = T.sid === k ? null : k; renderStudents(); renderGallery(); });
     $("stuBody").append(tr);
   }
@@ -255,6 +283,8 @@ function renderGallery() {
   if (T.filter === "hidden") list = list.filter((s) => s.hidden);
   else {
     list = list.filter((s) => !s.hidden);
+    if (T.filter === "challenge") list = list.filter((s) => !isRandom(s));
+    if (T.filter === "random") list = list.filter(isRandom);
     if (T.filter === "fixed") list = list.filter((s) => s.result === "fixed");
     if (T.filter === "repeat") list = list.filter((s) => s.result !== "fixed");
     if (T.filter === "warn") list = list.filter((s) => !verify(s));
@@ -279,7 +309,7 @@ function renderGallery() {
     t.append(miniBoard(parse(s.board, 5), 5, { label: `${s.sid} 제출` }));
     const ok = verify(s);
     const info = document.createElement("div");
-    info.innerHTML = `<b>${esc(s.sid)}</b>${T.cls === ALL ? " · " + esc(s.cls) : ""}<br><span class="tag ${s.result}">${s.result === "fixed" ? "고정" : s.result === "free" ? "반복·모두" : "반복"}</span> ${s.n}대${balanced(s) ? "" : ' <span class="tag muted">수 다름</span>'}${s.mode === "density" ? ' <span class="tag muted">밀도</span>' : ""}${ok ? "" : ' <span class="tag warn">확인 필요</span>'}<br><span class="meta">${fmtTime(s.createdAt)}</span>`;
+    info.innerHTML = `<b>${esc(s.sid)}</b>${T.cls === ALL ? " · " + esc(s.cls) : ""}<br><span class="tag ${s.result}">${s.result === "fixed" ? "고정" : s.result === "free" ? "반복·모두" : "반복"}</span> ${s.n}대${balanced(s) ? "" : ' <span class="tag muted">수 다름</span>'}${isRandom(s) ? ' <span class="tag muted">무작위</span>' : ""}${ok ? "" : ' <span class="tag warn">확인 필요</span>'}<br><span class="meta">${fmtTime(s.createdAt)}</span>`;
     t.append(info);
     t.addEventListener("click", () => select(s));
     g.append(t);
@@ -292,7 +322,7 @@ $("btnCsv").addEventListener("click", () => {
   const lines = [head.join("\t")].concat(scopeSubs().map((s) => {
     const rows = s.board.match(/.{5}/g).join(" ");
     const ids = challengeIds(s).map((id) => CHALLENGES.find((c) => c.id === id).short).join(", ");
-    return [s.cls, s.sid, new Date(s.createdAt).toLocaleString("ko-KR"), s.mode === "density" ? "밀도 조사" : "도전", rows, s.nr, s.nb, s.n, RESULT_TEXT[s.result] || s.result, s.start, s.period, ids, verify(s) ? "예" : "아니오", s.hidden ? "예" : ""].join("\t");
+    return [s.cls, s.sid, new Date(s.createdAt).toLocaleString("ko-KR"), isRandom(s) ? "무작위 실험" : "도전", rows, s.nr, s.nb, s.n, RESULT_TEXT[s.result] || s.result, s.start, s.period, ids, verify(s) ? "예" : "아니오", s.hidden ? "예" : ""].join("\t");
   }));
   const text = lines.join("\n");
   const msg = $("csvMsg"), fb = $("csvFallback");

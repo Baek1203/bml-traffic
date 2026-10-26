@@ -107,6 +107,10 @@ export function bestRecords(subs) {
 // 수업용 배치 — 모두 시뮬레이션으로 결과를 확인함
 export const PRESETS = {
   3: [
+    { id: "e1", label: "예제 1", board: "... RR. ...", note: "줄 선 빨간 차: 맨 앞 차만 가요." },
+    { id: "e2", label: "예제 2", board: ".B. .B. ...", note: "줄 선 파란 차: 맨 앞(아래) 차만 가요." },
+    { id: "e3", label: "예제 3", board: "... RRR ...", note: "꽉 찬 줄: 아무도 못 가요." },
+    { id: "e4", label: "예제 4", board: ".B. R.. ...", note: "빨강이 먼저 간 뒤의 판을 보고 파랑을 표시해요." },
     { id: "d1", label: "시연 ①", board: "BBR RR. B..", note: "4라운드까지 움직이다 멈춰요." },
     { id: "d2", label: "시연 ②", board: ".BR BR. ...", note: "3라운드마다 처음 모습이 돼요." },
     { id: "d3", label: "시연 ③", board: "BB. RR. ...", note: "5라운드마다 처음 모습이 되는데, 그동안 몇 대는 기다려요." },
@@ -118,7 +122,8 @@ export const PRESETS = {
     { id: "q1", label: "4×4 ①", board: "B.R. RR.R BB.. B...", note: "" },
     { id: "q2", label: "4×4 ②", board: ".BR. BR.. .R.. R.BB", note: "" },
     { id: "q3", label: "4×4 ③", board: "..RR .... B.B. RBRB", note: "" },
-    { id: "q4", label: "4×4 ④", board: "RR.R ...B .B.. RB.B", note: "" }
+    { id: "q4", label: "4×4 ④", board: "RR.R ...B .B.. RB.B", note: "" },
+    { id: "e5", label: "예제 5", board: "RR.B ...B BRRR ..B.", note: "여러 경우가 섞인 판" }
   ],
   5: []
 };

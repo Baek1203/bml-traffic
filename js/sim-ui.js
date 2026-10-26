@@ -4,6 +4,10 @@ import { RED, BLUE, EMPTY, counts, serialize, halfStep, willMove, target } from 
 const COLS = "가나다라마바사";
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+// ① 표시하기 단계의 표시: ○ 갈 수 있는 차, × 막힌 차
+const MARK_GO = '<span class="mk go" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11"/><circle class="o" cx="12" cy="12" r="5.6"/></svg></span>';
+const MARK_STOP = '<span class="mk stop" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="11"/><path d="M7.8 7.8l8.4 8.4M16.2 7.8l-8.4 8.4"/></svg></span>';
+
 export function carSvg(color) {
   return color === RED
     ? '<svg viewBox="0 0 100 100" aria-hidden="true"><polygon class="car-r" points="14,14 56,14 86,50 56,86 14,86"/></svg>'
@@ -47,7 +51,10 @@ function h(tag, attrs = {}, ...kids) {
 export class Simulator {
   constructor(root, opts = {}) {
     this.root = root;
-    this.opts = Object.assign({ editable: true, autoDetect: true, showDetectToggle: true, maxRounds: 400, halfDelay: 800 }, opts);
+    this.opts = Object.assign({ editable: true, autoDetect: true, showDetectToggle: true, maxRounds: 400, halfDelay: 800, checkStep: false, showCheckToggle: false }, opts);
+    // 두 단계 진행: ① 이번 차례 색의 차를 갈 수 있는 차(○)와 막힌 차(×)로 표시 → ② ○ 차만 한꺼번에 옮기기
+    this.checkStep = !!this.opts.checkStep;
+    this.marked = false;
     // 차가 한 칸씩 미끄러져 가는 움직임 (움직임 줄이기 설정이면 처음에 꺼 둠)
     let reduce = false;
     try { reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { }
@@ -88,7 +95,7 @@ export class Simulator {
     this.roundNum = h("span", { text: "0" });
     this.nextChip = h("span", { class: "chip" });
     this.countLine = h("div", { class: "meta" });
-    this.btnHalf = h("button", { type: "button", class: "btn primary", onclick: () => { this.stopAuto(); this.stepHalfShow(); } });
+    this.btnHalf = h("button", { type: "button", class: "btn primary", onclick: () => { this.stopAuto(); this.halfClick(); } });
     this.btnRound = h("button", { type: "button", class: "btn", text: "1라운드 진행", onclick: () => { this.stopAuto(); this.stepRoundShow(); } });
     this.btnAuto = h("button", { type: "button", class: "btn", text: "자동 재생", onclick: () => this.toggleAuto() });
     this.btnUndo = h("button", { type: "button", class: "btn", text: "되돌리기", onclick: () => this.undo() });
@@ -96,6 +103,10 @@ export class Simulator {
     this.btnReset = h("button", { type: "button", class: "btn", text: "처음 배치로", onclick: () => this.reset() });
     this.chkPreview = h("input", { type: "checkbox", checked: "" });
     this.chkPreview.addEventListener("change", () => { this.preview = this.chkPreview.checked; this.render(); });
+    this.chkCheck = h("input", { type: "checkbox" });
+    this.chkCheck.checked = this.checkStep;
+    this.chkCheck.addEventListener("change", () => { this.stopAuto(); this.checkStep = this.chkCheck.checked; this.marked = false; this.render(); });
+    this.previewLabel = h("label", { class: "toggle" }, this.chkPreview, document.createTextNode(" 이번 차례에 움직일 차 표시"));
     this.chkMotion = h("input", { type: "checkbox" });
     this.chkMotion.checked = this.motion;
     this.chkMotion.addEventListener("change", () => { this.motion = this.chkMotion.checked; });
@@ -111,7 +122,8 @@ export class Simulator {
       this.countLine,
       h("div", { class: "btn-grid" }, this.btnHalf, this.btnRound, this.btnAuto, this.btnUndo, this.btnToEnd, this.btnReset),
       h("div", { class: "toggles" },
-        h("label", { class: "toggle" }, this.chkPreview, document.createTextNode(" 이번 차례에 움직일 차 표시")),
+        this.opts.showCheckToggle ? h("label", { class: "toggle" }, this.chkCheck, document.createTextNode(" 두 단계로 진행 (① ○× 표시 → ② ○ 차만 옮기기)")) : null,
+        this.previewLabel,
         h("label", { class: "toggle" }, this.chkMotion, document.createTextNode(" 차가 움직이는 모습 보기")),
         this.opts.showDetectToggle ? h("label", { class: "toggle" }, this.chkDetect, document.createTextNode(" 같은 모습 자동으로 찾기")) : null),
       this.verdictBox, this.btnReveal);
@@ -122,7 +134,8 @@ export class Simulator {
       h("div", { class: "strip-head" }, h("h3", { text: "라운드 기록" }), this.stripCount),
       this.strip);
 
-    r.append(h("div", { class: "sim-top" }, h("div", { class: "sim-board" }, this.frame, this.editRow, this.hint), this.controls), this.stripWrap);
+    this.markLine = h("p", { class: "mark-line", "aria-live": "polite" });
+    r.append(h("div", { class: "sim-top" }, h("div", { class: "sim-board" }, this.frame, this.markLine, this.editRow, this.hint), this.controls), this.stripWrap);
   }
 
   load(board, L) {
@@ -145,6 +158,7 @@ export class Simulator {
 
   reset() {
     this.stopAuto();
+    this.marked = false;
     this.cur = Int8Array.from(this.start);
     this.half = 0;
     this.pendingMr = null;
@@ -176,6 +190,7 @@ export class Simulator {
     const { n } = counts(this.cur);
     if (n === 0) return false;
     if (this.half === 0 && this.rounds.length > this.opts.maxRounds) return false;
+    this.marked = false;
     this.undoStack.push({ cur: Int8Array.from(this.cur), half: this.half, pendingMr: this.pendingMr, len: this.rounds.length, verdict: this.verdict, arrived: new Set(this.arrived) });
     const color = this.half === 0 ? RED : BLUE;
     const moves = [], blocked = [];
@@ -210,8 +225,41 @@ export class Simulator {
     this.animateLast(dur || 450);
     return true;
   }
+  // ① 표시하기: 이번 차례 색의 차마다 바로 앞 칸을 보고 ○(갈 수 있음) / ×(막힘) 표시
+  markNow() {
+    if (counts(this.cur).n === 0) return false;
+    if (this.half === 0 && this.rounds.length > this.opts.maxRounds) return false;
+    this.marked = true;
+    this.render();
+    return true;
+  }
+  halfClick() {
+    if (this.checkStep && !this.marked) this.markNow();
+    else this.stepHalfShow();
+  }
+  // 두 단계 진행일 때 1라운드: 표시 → 옮기기 → 표시 → 옮기기를 차례로 보여 줌
+  runSteps(steps) {
+    const next = () => {
+      this.pendingTimer = null;
+      const st = steps.shift();
+      if (!st) return;
+      const ok = st === "mark" ? this.markNow() : this.stepHalfShow();
+      if (!ok || !steps.length) return;
+      const wait = st === "mark" ? 1000 : (this.motion ? 650 : 350);
+      this.pendingTimer = setTimeout(next, wait);
+    };
+    next();
+  }
   // 1라운드: 빨강 차례를 보여 준 뒤 움직임이 끝나면 파랑 차례
   stepRoundShow() {
+    if (this.checkStep) {
+      const steps = [];
+      if (!this.marked) steps.push("mark");
+      steps.push("move");
+      if (this.half === 0) steps.push("mark", "move");
+      this.runSteps(steps);
+      return true;
+    }
     if (!this.stepHalfShow()) return false;
     if (this.half === 1) {
       const wait = this.motion ? 450 + 150 : 0;
@@ -275,6 +323,7 @@ export class Simulator {
     return null;
   }
   runToVerdict() {
+    this.marked = false;
     let guard = 0;
     while (!this.verdict && guard++ < this.opts.maxRounds * 2) { if (!this.stepHalf()) break; }
     if (this.half === 1) this.stepHalf();
@@ -282,6 +331,7 @@ export class Simulator {
   }
   undo() {
     this.stopAuto();
+    if (this.marked) { this.marked = false; this.render(); return; }
     const s = this.undoStack.pop();
     if (!s) return;
     this.cur = s.cur; this.half = s.half; this.pendingMr = s.pendingMr; this.verdict = s.verdict; this.arrived = s.arrived;
@@ -299,6 +349,7 @@ export class Simulator {
     const delay = this.L >= 5 ? Math.round(this.opts.halfDelay * 0.7) : this.opts.halfDelay;
     const dur = Math.min(450, Math.round(delay * 0.6));
     this.timer = setInterval(() => {
+      if (this.checkStep && !this.marked) { if (!this.markNow()) this.stopAuto(); return; }
       const had = !!this.verdict;
       if (!this.stepHalfShow(dur)) { this.stopAuto(); return; }
       if (!had && this.verdict && this.autoDetect) this.stopAuto();
@@ -310,12 +361,23 @@ export class Simulator {
   render() {
     const L = this.L, color = this.half === 0 ? RED : BLUE;
     const ed = this.editable;
+    const marked = this.checkStep && this.marked;
     this.boardEl.classList.toggle("editable", ed);
+    const dest = new Set();
+    let nGo = 0, nStop = 0;
+    if (marked) for (let i = 0; i < L * L; i++) {
+      if (this.cur[i] !== color) continue;
+      if (willMove(this.cur, L, i, color)) { nGo++; dest.add(target(i, L, color)); } else nStop++;
+    }
     for (let i = 0; i < L * L; i++) {
       const c = this.cells[i], v = this.cur[i];
-      c.innerHTML = v ? carSvg(v) : "";
-      c.classList.toggle("arrived", this.arrived.has(i));
-      c.classList.toggle("go", this.preview && willMove(this.cur, L, i, color));
+      const mk = marked && v === color ? (willMove(this.cur, L, i, color) ? "go" : "stop") : "";
+      c.innerHTML = (v ? carSvg(v) : "") + (mk === "go" ? MARK_GO : mk === "stop" ? MARK_STOP : "");
+      c.classList.toggle("mk-go", mk === "go");
+      c.classList.toggle("mk-stop", mk === "stop");
+      c.classList.toggle("dest", dest.has(i));
+      c.classList.toggle("arrived", !marked && this.arrived.has(i));
+      c.classList.toggle("go", this.preview && !this.checkStep && willMove(this.cur, L, i, color));
       c.setAttribute("aria-label", `${((i / L) | 0) + 1}줄 ${COLS[i % L]}열 ${v === RED ? "빨간 차" : v === BLUE ? "파란 차" : "빈칸"}`);
       c.tabIndex = ed ? 0 : -1;
     }
@@ -324,7 +386,12 @@ export class Simulator {
     this.roundNum.textContent = round;
     this.nextChip.innerHTML = `<span class="sw ${color === RED ? "r" : "b"}"></span>다음: ${color === RED ? "빨강" : "파랑"} 차례`;
     this.countLine.textContent = `빨강 ${nr} · 파랑 ${nb} · 차 ${n}대 / ${L * L}칸 · 밀도 ${(n / (L * L)).toFixed(2)}`;
-    this.btnHalf.textContent = `${color === RED ? "빨강" : "파랑"} 차례 진행`;
+    const cname = color === RED ? "빨강" : "파랑";
+    this.btnHalf.textContent = !this.checkStep ? `${cname} 차례 진행` : this.marked ? "② ○ 차만 한꺼번에 옮기기" : `① ${cname} 차 ○× 표시하기`;
+    this.previewLabel.hidden = this.checkStep;
+    this.markLine.hidden = !this.checkStep || n === 0;
+    if (marked) this.markLine.innerHTML = `<b>${cname} 차례</b> ○ 갈 수 있는 차 <b>${nGo}</b>대 · × 막힌 차 <b>${nStop}</b>대 → ○ 차만 한꺼번에 한 칸씩`;
+    else this.markLine.textContent = `${cname} 차례 · 먼저 ${cname} 차마다 바로 앞 칸을 봐요. 비어 있으면 ○, 막혀 있으면 ×. 표시할 때는 아직 아무 차도 옮기지 않아요.`;
     const empty = n === 0;
     [this.btnHalf, this.btnRound, this.btnAuto, this.btnToEnd].forEach((b) => { b.disabled = empty; });
     this.btnToEnd.disabled = empty || !!this.verdict && this.half === 0;

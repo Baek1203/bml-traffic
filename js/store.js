@@ -1,5 +1,5 @@
 // Firestore 읽기·쓰기를 한곳에 모음
-//   config/main        : { classes: [반 이름], density: { on, cars }, resetAt: { 반: 밀리초 }, updatedAt }
+//   config/main        : { classes: [반 이름], density: { on: 무작위 실험 열림, cars: 쓰지 않음 }, resetAt: { 반: 밀리초 }, updatedAt }
 //   submissions/{자동} : { cls, sid, mode, size, board, nr, nb, n, result, start, period, densityCars, createdAt, hidden }
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
