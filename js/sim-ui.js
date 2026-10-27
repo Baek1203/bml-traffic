@@ -117,24 +117,45 @@ export class Simulator {
     this.btnReveal = h("button", { type: "button", class: "btn", text: "같은 모습 확인하기", onclick: () => { this.revealed = true; this.render(); } });
 
     const counter = h("div", { class: "counter" }, h("small", { text: "라운드" }), this.roundNum);
-    this.controls = h("div", { class: "sim-controls" },
-      h("div", { class: "statline" }, counter, this.nextChip),
-      this.countLine,
-      h("div", { class: "btn-grid" }, this.btnHalf, this.btnRound, this.btnAuto, this.btnUndo, this.btnToEnd, this.btnReset),
-      h("div", { class: "toggles" },
-        this.opts.showCheckToggle ? h("label", { class: "toggle" }, this.chkCheck, document.createTextNode(" 두 단계로 진행 (① ○× 표시 → ② ○ 차만 옮기기)")) : null,
-        this.previewLabel,
-        h("label", { class: "toggle" }, this.chkMotion, document.createTextNode(" 차가 움직이는 모습 보기")),
-        this.opts.showDetectToggle ? h("label", { class: "toggle" }, this.chkDetect, document.createTextNode(" 같은 모습 자동으로 찾기")) : null),
-      this.verdictBox, this.btnReveal);
+    const statline = h("div", { class: "statline" }, counter, this.nextChip);
+    const btnGrid = h("div", { class: "btn-grid" }, this.btnHalf, this.btnRound, this.btnAuto, this.btnUndo, this.btnToEnd, this.btnReset);
+    const toggles = h("div", { class: "toggles" },
+      this.opts.showCheckToggle ? h("label", { class: "toggle" }, this.chkCheck, document.createTextNode(" 두 단계로 진행 (① ○× 표시 → ② ○ 차만 옮기기)")) : null,
+      this.previewLabel,
+      h("label", { class: "toggle" }, this.chkMotion, document.createTextNode(" 차가 움직이는 모습 보기")),
+      this.opts.showDetectToggle ? h("label", { class: "toggle" }, this.chkDetect, document.createTextNode(" 같은 모습 자동으로 찾기")) : null);
 
     this.stripCount = h("span", { class: "meta" });
     this.strip = h("div", { class: "strip", role: "list", "aria-label": "라운드 기록" });
+    this.markLine = h("p", { class: "mark-line", "aria-live": "polite" });
+
+    if (this.opts.stage) {
+      // 시연용(전자칠판): 판과 라운드 기록을 위쪽에 나란히 크게, 버튼은 그 아래 한 줄로
+      r.classList.add("stage");
+      this.stripWrap = h("section", { class: "strip-wrap" },
+        h("div", { class: "strip-head" }, h("h3", { text: "라운드 기록" }), this.stripCount, this.btnReveal),
+        this.verdictBox, this.strip);
+      // 배치 고치기와 안내는 선생님만 보면 되므로 아래 버튼 막대로
+      this.controls = h("div", { class: "sim-controls" }, btnGrid, toggles, this.editRow, this.hint);
+      r.append(
+        h("div", { class: "sim-stage" },
+          h("div", { class: "sim-board" }, h("div", { class: "stage-stat" }, statline, this.countLine), this.frame, this.markLine),
+          this.stripWrap),
+        this.controls);
+      if (typeof ResizeObserver === "function") {
+        let w = 0, hgt = 0;
+        new ResizeObserver(() => {
+          if (this.stripWrap.clientWidth === w && this.stripWrap.clientHeight === hgt) return;
+          w = this.stripWrap.clientWidth; hgt = this.stripWrap.clientHeight;
+          this.fitStrip();
+        }).observe(this.stripWrap);
+      }
+      return;
+    }
+    this.controls = h("div", { class: "sim-controls" }, statline, this.countLine, btnGrid, toggles, this.verdictBox, this.btnReveal);
     this.stripWrap = h("section", { class: "strip-wrap" },
       h("div", { class: "strip-head" }, h("h3", { text: "라운드 기록" }), this.stripCount),
       this.strip);
-
-    this.markLine = h("p", { class: "mark-line", "aria-live": "polite" });
     r.append(h("div", { class: "sim-top" }, h("div", { class: "sim-board" }, this.frame, this.markLine, this.editRow, this.hint), this.controls), this.stripWrap);
   }
 
@@ -397,7 +418,9 @@ export class Simulator {
     this.btnToEnd.disabled = empty || !!this.verdict && this.half === 0;
     this.btnUndo.disabled = this.undoStack.length === 0;
     this.btnReset.disabled = this.undoStack.length === 0;
-    this.editRow.hidden = !ed;
+    // 시연 화면: 배치 고치기 줄은 '직접 배치'일 때만 (칸을 눌러 고치는 것은 언제나 됨)
+    this.editRow.hidden = !ed || (this.opts.stage && !this.opts.showEditRow);
+    this.hint.hidden = this.opts.stage && !this.opts.showEditRow;
     this.hint.textContent = !this.opts.editable ? "" : ed
       ? (empty ? "판이 비어 있어요. 칸을 눌러 차를 놓아 보세요." : "칸을 누르면 차를 놓거나 뺄 수 있어요. 돌리기 시작하면 고칠 수 없어요.")
       : "배치를 고치려면 '처음 배치로'를 누르세요.";
@@ -423,8 +446,13 @@ export class Simulator {
       if (mark && (k === mark.start || k === mark.at)) tile.classList.add("match", mark.type);
       tile.append(h("div", { class: "tile-label", text: k === 0 ? "처음" : `${k}라운드` }));
       tile.append(miniBoard(r.board, L, { label: `${k === 0 ? "처음" : k + "라운드"} 판` }));
-      tile.append(h("div", { class: "tile-moves", text: k === 0 ? " " : `움직임 ${r.mr}·${r.mb}` }));
-      if (mark && k === mark.at) tile.append(h("div", { class: "tile-badge", text: `= ${mark.start === 0 ? "처음" : mark.start + "라운드"}` }));
+      const badge = mark && k === mark.at ? h("div", { class: "tile-badge", text: `= ${mark.start === 0 ? "처음" : mark.start + "라운드"}` }) : null;
+      // 시연 화면에서는 같은 모습 표시가 '움직임' 줄 자리에 들어감 (칸 높이가 그대로라 기록이 넘치지 않음)
+      if (badge && this.opts.stage) tile.append(badge);
+      else {
+        tile.append(h("div", { class: "tile-moves", text: k === 0 ? " " : `움직임 ${r.mr}·${r.mb}` }));
+        if (badge) tile.append(badge);
+      }
       this.strip.append(tile);
     });
     if (this.half === 1) {
@@ -436,8 +464,22 @@ export class Simulator {
     }
     this.stripCount.textContent = round === 0 ? "라운드가 끝날 때마다 판 모습이 여기에 쌓여요. '움직임 2·1'은 빨강 2대, 파랑 1대가 움직였다는 뜻이에요." : `${round}라운드까지 · '움직임 2·1'은 빨강 2대, 파랑 1대가 움직였다는 뜻`;
     this.strip.scrollTop = this.strip.scrollHeight;
+    this.fitStrip();
 
     if (this.opts.onChange) this.opts.onChange(this.state());
+  }
+
+  // 시연 화면: 라운드 기록 칸이 넘치지 않는 가장 큰 크기로 판 그림을 맞춤 (처음과 같은 모습이 함께 보이도록)
+  fitStrip() {
+    if (!this.opts.stage) return;
+    const st = this.strip;
+    if (!st.isConnected || !st.clientHeight) return;
+    let s = 230;
+    st.style.setProperty("--tile", s + "px");
+    while (s > 80 && st.scrollHeight > st.clientHeight + 1) { s -= 6; st.style.setProperty("--tile", s + "px"); }
+    // 그래도 넘치면: 같은 모습을 찾았을 때는 그 처음 모습부터, 아니면 가장 최근 기록이 보이게
+    const first = st.querySelector(".tile.match");
+    st.scrollTop = first ? Math.max(0, first.offsetTop - st.offsetTop - 18) : st.scrollHeight;
   }
 
   state() {

@@ -12,7 +12,7 @@ const ls = {
 /* ---------- 규칙 익히기 ---------- */
 const GROUP_NOTE = {
   e: "규칙 ④ 예제: '① ○× 표시하기'를 누르기 전에 학생들에게 어느 차가 갈 수 있는지 먼저 물어보세요. 앞차가 이번 차례에 떠나더라도 뒤차는 ×예요. 표시는 차례가 시작될 때의 판을 보고 하니까요. 그다음 '② ○ 차만 한꺼번에 옮기기'를 눌러요.",
-  d: "시연 ①②③: 라운드가 끝날 때마다 아래 '라운드 기록'에 판 모습이 쌓여요. '같은 모습 자동으로 찾기'를 끄고 학생들이 먼저 같은 모습을 찾게 해 보세요.",
+  d: "시연 ①②③: 라운드가 끝날 때마다 판 오른쪽 '라운드 기록'에 판 모습이 크게 쌓여요. '같은 모습 자동으로 찾기'를 끄고 학생들이 먼저 같은 모습을 찾게 해 보세요.",
   p: "활동지 '손으로 돌려 보기'의 연습 가·나·다예요. 학생들이 판 위에서 직접 해 본 뒤 한 라운드씩 함께 돌리며 점검하세요.",
   q: "활동지 '4×4 예상하고 확인하기'의 배치예요. 학생들이 예상을 적은 뒤 함께 돌려 확인하세요.",
   c: "칸을 눌러 마음대로 배치해 보세요. 배치는 이 컴퓨터에 저장돼요."
@@ -20,11 +20,12 @@ const GROUP_NOTE = {
 const rules = { L: 3, preset: "d1" };
 const rulesSim = new Simulator($("simRules"), {
   L: 3,
+  stage: true,
   checkStep: true,
   showCheckToggle: true,
   onEdit: (b) => {
     ls.set("bml-custom-" + rules.L, serialize(b));
-    if (rules.preset !== "custom") { rules.preset = "custom"; renderPresetButtons(); }
+    if (rules.preset !== "custom") { rules.preset = "custom"; rulesSim.opts.showEditRow = true; renderPresetButtons(); }
   }
 });
 function presetList(L) { return PRESETS[L].concat([{ id: "custom", label: "직접 배치", board: null }]); }
@@ -48,6 +49,7 @@ function loadRules(L, presetId) {
     const saved = ls.get("bml-custom-" + L, null);
     board = saved && saved.length === L * L ? parse(saved, L) : new Int8Array(L * L);
   } else board = parse(PRESETS[L].find((p) => p.id === presetId).board, L);
+  rulesSim.opts.showEditRow = presetId === "custom";
   rulesSim.load(board, L);
   renderPresetButtons();
 }
@@ -66,6 +68,7 @@ function showView(name) {
     $("view-" + t).hidden = t !== name;
   }
   $("clsBox").hidden = name !== "dash";
+  document.body.classList.toggle("wide-view", name === "rules");
   if (name !== "rules") rulesSim.stopAuto();
   if (name === "lab") { if (!lab) lab = initLab(); lab.show(); } else if (lab) lab.hide();
   try { history.replaceState(null, "", name === "dash" ? location.pathname : "#" + name); } catch (e) { }
