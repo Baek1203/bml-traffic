@@ -139,16 +139,16 @@ export function decodeGuess(s) {
   return d >= 200 ? "repeat" : d >= 100 ? "fixed" : null;
 }
 export function isHit(guess, result) { return guess ? (guess === "fixed") === (result === "fixed") : null; }
-// 예상 점수: 맞힌 수, 예상한 수, 끝에서부터 연속으로 맞힌 수 (trials는 시간 순서)
+// 예상 성적: hits 맞힌 수, known 예상한 수, streak 지금 이어지는 연속, best 가장 긴 연속(= 점수)
 export function guessScore(trials, getGuess = decodeGuess) {
-  let hits = 0, known = 0, streak = 0;
+  let hits = 0, known = 0, streak = 0, best = 0;
   for (const s of trials) {
     const g = getGuess(s);
     if (!g) { streak = 0; continue; }
     known++;
-    if (isHit(g, s.result)) { hits++; streak++; } else streak = 0;
+    if (isHit(g, s.result)) { hits++; streak++; if (streak > best) best = streak; } else streak = 0;
   }
-  return { hits, known, streak };
+  return { hits, known, streak, best };
 }
 // 학생마다 차 수 7가지를 한 바퀴에 한 번씩, 바퀴마다 순서를 섞어서 (학번으로 정해지는 순서라 새로고침해도 같음)
 function mulberry32(a) {

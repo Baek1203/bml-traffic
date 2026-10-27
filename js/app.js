@@ -1,6 +1,6 @@
 // 학생 화면 — 첫 화면에서 반과 학번으로 들어가 무작위 실험
 //   앱이 정한 차 수로 무작위 배치 → 고정·반복 예상 → 판정, 결과는 반 전체 그래프로 모임
-//   예상이 맞으면 1점, 실험이 쌓이면 교사 화면의 우리 반 그래프가 점점 또렷해짐
+//   점수는 연속으로 맞힌 최고 기록, 실험이 쌓이면 교사 화면의 우리 반 그래프가 점점 또렷해짐
 import { serialize, classify, playRound, RAND_COUNTS, encodeGuess, decodeGuess, isHit, guessScore, randCountAt } from "./core.js";
 import { carSvg } from "./sim-ui.js";
 
@@ -135,13 +135,13 @@ function randTrials() { return ch.practice ? rx.local : myRandomSubs(); }
 function nextCars() { return randCountAt(ch.me ? ch.me.sid : "0", randTrials().length); }
 // 예상: 서버에 함께 저장된 값, 없으면 이 기기에 남은 값
 function guessOf(s, gs) { return s.guess || decodeGuess(s) || (gs || guesses())[s.board] || null; }
-// 우리 반 예상 점수 최고
+// 우리 반 최고 점수(가장 긴 연속 적중)
 function classTopScore() {
   if (ch.practice || !ch.me) return null;
   const by = new Map();
   visibleSubs().forEach((s) => { if (!by.has(s.sid)) by.set(s.sid, []); by.get(s.sid).push(s); });
   let top = 0;
-  for (const list of by.values()) top = Math.max(top, guessScore(list).hits);
+  for (const list of by.values()) top = Math.max(top, guessScore(list).best);
   return top;
 }
 function randomBoard(n) {
@@ -234,8 +234,10 @@ function renderRandom() {
       const repeat = c.type !== "fixed";
       const hit = isHit(rx.guess, c.type);
       const sc = guessScore(trials, (s) => guessOf(s));
+      const before = guessScore(trials.filter((s) => s.board !== rx.boardStr), (s) => guessOf(s));
       st.innerHTML = `<span class="tag ${c.type}">${repeat ? "반복" : "고정"}</span> ${c.rounds}라운드에 판정 · 예상은 ${rx.guess === "fixed" ? "고정" : "반복"} → ` +
-        (hit ? `<b class="hit">맞았어요! +1점</b>${sc.streak >= 2 ? ` <b class="streak">${sc.streak}연속!</b>` : ""}` : `<b class="miss">아쉬워요, 이번엔 달랐어요</b>`);
+        (hit ? `<b class="hit">맞았어요! ${sc.streak}연속</b>${sc.best > before.best && sc.best >= 2 ? ` <b class="streak">최고 기록 ${sc.best}연속!</b>` : ""}`
+          : `<b class="miss">아쉬워요, 이번엔 달랐어요</b>${before.streak >= 1 ? ` ${before.streak}연속이 끊겼어요. 다시 1부터!` : ""}`);
       if (rx.pending && !ch.practice) act.append(btn("다시 보내기", "", randSend));
       act.append(btn("다음 실험", "primary", randNext));
     }
@@ -254,12 +256,12 @@ function renderRandom() {
   $("randCount").textContent = trials.length ? `모두 ${trials.length}번 · 예상 적중 ${sc.hits}/${sc.known}` : "";
   // 점수
   const scoreEl = $("myScore");
-  if (scoreEl.textContent !== String(sc.hits)) {
-    const up = +scoreEl.textContent < sc.hits && rx.phase === "done";
-    scoreEl.textContent = sc.hits;
+  if (scoreEl.textContent !== String(sc.best)) {
+    const up = +scoreEl.textContent < sc.best && rx.phase === "done";
+    scoreEl.textContent = sc.best;
     if (up) { scoreEl.classList.remove("bump"); void scoreEl.offsetWidth; scoreEl.classList.add("bump"); }
   }
-  $("myStreak").textContent = sc.streak >= 2 ? `${sc.streak}번 연속으로 맞히는 중` : sc.known ? `${sc.known}번 중 ${sc.hits}번 맞힘` : "예상이 맞으면 1점";
+  $("myStreak").textContent = !sc.known ? "연속으로 맞힌 최고 기록이 점수예요" : sc.streak >= 1 ? `지금 ${sc.streak}번 연속으로 맞히는 중` : "지금 연속 0 · 다음 실험부터 다시!";
   const top = classTopScore();
   $("classTop").textContent = top === null ? "" : `우리 반 최고 ${top}점`;
   // 한 바퀴: 7가지 차 수를 한 번씩

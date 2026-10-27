@@ -408,3 +408,4 @@ body.wide-view .preset-note { margin: 0 0 12px; }
   .sim.stage .strip { max-height: 560px; }
   .sim.stage .board-frame { width: min(100%, 520px); min-width: 0; }
 }
+.score-big span small.lbl { font-size: 12px; }

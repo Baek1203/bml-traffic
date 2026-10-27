@@ -236,21 +236,21 @@ function studentStats(list) {
   return { all, recent, level };
 }
 
-// 예상왕: 맞힌 수(점수)가 많은 순, 같으면 적중률이 높은 순
+// 예상왕: 점수(가장 긴 연속 적중)가 높은 순, 같으면 적중률이 높은 순
 function renderRanking(subs) {
   const by = new Map();
   subs.forEach((s) => { const k = s.cls + "|" + s.sid; if (!by.has(k)) by.set(k, []); by.get(k).push(s); });
   const list = [...by.entries()].map(([k, l]) => ({ k, sid: k.split("|")[1], cls: k.split("|")[0], n: l.length, ...studentStats(l) }))
     .filter((x) => x.all.known > 0)
-    .sort((a, b) => b.all.hits - a.all.hits || b.all.hits / b.all.known - a.all.hits / a.all.known || a.n - b.n);
+    .sort((a, b) => b.all.best - a.all.best || b.all.hits / b.all.known - a.all.hits / a.all.known || a.n - b.n);
   const box = $("rankBody");
   if (!list.length) { box.innerHTML = '<tr><td colspan="5" class="empty" style="text-align:center">아직 예상 기록이 없어요.</td></tr>'; return; }
   let rank = 0, prev = null;
   box.innerHTML = list.slice(0, 10).map((x, i) => {
-    if (!prev || prev.all.hits !== x.all.hits || prev.all.known !== x.all.known) rank = i + 1;
+    if (!prev || prev.all.best !== x.all.best || prev.all.hits * x.all.known !== x.all.hits * prev.all.known) rank = i + 1;
     prev = x;
     const who = T.rankSids ? `${esc(x.sid)}${T.cls === ALL ? ` <span class="meta">${esc(x.cls)}</span>` : ""}` : '<span class="meta">학번 가림</span>';
-    return `<tr${rank === 1 ? ' class="rank1"' : ""}><td>${rank}위</td><td class="left">${who}</td><td class="mono"><b>${x.all.hits}</b>점</td><td class="mono">${x.n}번</td><td class="mono">${pct(x.all.hits, x.all.known)}</td></tr>`;
+    return `<tr${rank === 1 ? ' class="rank1"' : ""}><td>${rank}위</td><td class="left">${who}</td><td class="mono"><b>${x.all.best}</b>점</td><td class="mono">${x.n}번</td><td class="mono">${pct(x.all.hits, x.all.known)}</td></tr>`;
   }).join("");
 }
 
@@ -269,7 +269,7 @@ function renderStudents() {
     const st = studentStats(good);
     const tr = document.createElement("tr");
     tr.className = "clickable" + (T.sid === k ? " sel" : "");
-    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length}</td><td class="mono">${st.all.hits}</td><td class="mono">${pct(st.all.hits, st.all.known)}</td><td class="mono">${st.recent.known ? `${st.recent.hits}/${st.recent.known}` : "–"}</td><td class="mono">${warn || ""}</td><td class="left">${st.level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
+    tr.innerHTML = `<td class="mono">${esc(sid)}</td><td class="left">${esc(cls)}</td><td class="mono">${list.length}</td><td class="mono">${st.all.best}</td><td class="mono">${pct(st.all.hits, st.all.known)}</td><td class="mono">${st.recent.known ? `${st.recent.hits}/${st.recent.known}` : "–"}</td><td class="mono">${warn || ""}</td><td class="left">${st.level}</td><td class="mono">${fmtTime(Math.max(...list.map((s) => s.createdAt)))}</td>`;
     tr.addEventListener("click", () => { T.sid = T.sid === k ? null : k; renderStudents(); renderGallery(); });
     $("stuBody").append(tr);
   }
